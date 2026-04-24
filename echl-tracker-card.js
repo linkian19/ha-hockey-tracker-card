@@ -1,5 +1,5 @@
 /**
- * ECHL Tracker Card v1.1.1
+ * ECHL Tracker Card v1.1.2
  * https://github.com/linkian19/ha-echl-tracker-card
  */
 import { LitElement, html, css } from "https://unpkg.com/lit@2.8.0/index.js?module";
@@ -173,8 +173,7 @@ class EchlTrackerCard extends LitElement {
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: flex-start;
-        padding-top: 60px; /* align with score row */
+        justify-content: center;
         gap: 4px;
         flex-shrink: 0;
       }
@@ -504,12 +503,12 @@ class EchlTrackerCard extends LitElement {
     return html`
       <div class="upcoming-teams">
         <div class="upcoming-team">
-          ${this._logo(awayLogo, 40)}
+          ${this._logo(awayLogo)}
           <span>${awayName ?? "Away"}</span>
         </div>
         <span class="upcoming-at">@</span>
         <div class="upcoming-team">
-          ${this._logo(homeLogo, 40)}
+          ${this._logo(homeLogo)}
           <span>${homeName ?? "Home"}</span>
         </div>
       </div>
