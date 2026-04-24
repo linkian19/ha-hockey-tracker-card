@@ -1,5 +1,5 @@
 /**
- * ECHL Tracker Card v1.1.0
+ * ECHL Tracker Card v1.1.1
  * https://github.com/linkian19/ha-echl-tracker-card
  */
 import { LitElement, html, css } from "https://unpkg.com/lit@2.8.0/index.js?module";
@@ -27,7 +27,13 @@ class EchlTrackerCardEditor extends LitElement {
       { name: "show_recent_games", selector: { boolean: {} } },
       {
         name: "recent_games_count",
+        default: 3,
         selector: { number: { min: 1, max: 10, step: 1, mode: "box" } },
+      },
+      {
+        name: "logo_size",
+        default: 64,
+        selector: { number: { min: 24, max: 120, step: 4, mode: "slider" } },
       },
     ];
   }
@@ -40,7 +46,8 @@ class EchlTrackerCardEditor extends LitElement {
       show_shots:         "Show shots on goal",
       show_next_game:     "Show next game when no game is active",
       show_recent_games:  "Show recent game results",
-      recent_games_count: "Number of recent games to show (max 10)",
+      recent_games_count: "Number of recent games to show (1–10, default: 3)",
+      logo_size:          "Logo size in px (24–120, default: 64)",
     }[schema.name] ?? schema.name;
   }
 
@@ -101,7 +108,17 @@ class EchlTrackerCard extends LitElement {
       .badge-pre   { background: #1565c0; color: #fff; }
       .badge-final { background: var(--secondary-text-color); color: #fff; }
       .badge-none  { background: var(--disabled-color, #9e9e9e); color: #fff; }
-      .spacer { flex: 1; }
+      .card-title {
+        flex: 1;
+        text-align: center;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--primary-text-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding: 0 8px;
+      }
       .refresh-btn {
         --mdc-icon-button-size: 32px;
         --mdc-icon-size: 18px;
@@ -129,8 +146,6 @@ class EchlTrackerCard extends LitElement {
         min-width: 0;
       }
       .team-logo-img {
-        width: 56px;
-        height: 56px;
         object-fit: contain;
       }
       .team-logo-icon {
@@ -311,6 +326,7 @@ class EchlTrackerCard extends LitElement {
       show_next_game: true,
       show_recent_games: false,
       recent_games_count: 3,
+      logo_size: 64,
     };
   }
 
@@ -322,6 +338,7 @@ class EchlTrackerCard extends LitElement {
       show_next_game: true,
       show_recent_games: false,
       recent_games_count: 3,
+      logo_size: 64,
       ...config,
     };
   }
@@ -373,7 +390,7 @@ class EchlTrackerCard extends LitElement {
         <div class="content">
           <div class="top-bar">
             <span class="badge ${badgeMap[state] ?? 'badge-none'}">${badgeLabel}</span>
-            <span class="spacer"></span>
+            <span class="card-title">${this._cardTitle(a, stateObj)}</span>
             <ha-icon-button class="refresh-btn" label="Refresh" @click=${this._refresh}>
               <ha-icon icon="mdi:refresh"></ha-icon>
             </ha-icon-button>
@@ -524,7 +541,16 @@ class EchlTrackerCard extends LitElement {
   // Helpers
   // ------------------------------------------------------------------
 
-  _logo(url, size = 56) {
+  _cardTitle(a, stateObj) {
+    if (this.config.title) return this.config.title;
+    if (a.home_team && a.away_team) {
+      return a.is_home ? a.home_team : a.away_team;
+    }
+    return stateObj.attributes.friendly_name ?? "";
+  }
+
+  _logo(url, size) {
+    size = size ?? this.config.logo_size ?? 64;
     if (!this.config.show_logo) return html``;
     if (url) {
       return html`
