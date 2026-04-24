@@ -1,5 +1,5 @@
 /**
- * Hockey Tracker Card v1.2.0
+ * Hockey Tracker Card v1.2.1
  * https://github.com/linkian19/ha-hockey-tracker-card
  */
 import { LitElement, html, css } from "https://unpkg.com/lit@2.8.0/index.js?module";
@@ -88,15 +88,16 @@ class HockeyTrackerCard extends LitElement {
     return css`
       :host { display: block; }
 
-      .content { padding: 14px 16px 12px; }
+      /* ── Root content wrapper ────────────────────────── */
+      .ht-content { padding: 14px 16px 12px; }
 
       /* ── Top bar ─────────────────────────────────────── */
-      .top-bar {
+      .ht-header {
         display: flex;
         align-items: center;
         margin-bottom: 12px;
       }
-      .badge {
+      .ht-badge {
         padding: 3px 10px;
         border-radius: 99px;
         font-size: 0.68rem;
@@ -104,11 +105,11 @@ class HockeyTrackerCard extends LitElement {
         letter-spacing: 0.07em;
         text-transform: uppercase;
       }
-      .badge-live  { background: #d32f2f; color: #fff; }
-      .badge-pre   { background: #1565c0; color: #fff; }
-      .badge-final { background: var(--secondary-text-color); color: #fff; }
-      .badge-none  { background: var(--disabled-color, #9e9e9e); color: #fff; }
-      .card-title {
+      .ht-badge--live  { background: #d32f2f; color: #fff; }
+      .ht-badge--pre   { background: #1565c0; color: #fff; }
+      .ht-badge--final { background: var(--secondary-text-color); color: #fff; }
+      .ht-badge--none  { background: var(--disabled-color, #9e9e9e); color: #fff; }
+      .ht-title {
         flex: 1;
         text-align: center;
         font-size: 1.1rem;
@@ -119,7 +120,7 @@ class HockeyTrackerCard extends LitElement {
         text-overflow: ellipsis;
         padding: 0 8px;
       }
-      .refresh-btn {
+      .ht-refresh-btn {
         --mdc-icon-button-size: 32px;
         --mdc-icon-size: 18px;
         color: var(--secondary-text-color);
@@ -127,7 +128,7 @@ class HockeyTrackerCard extends LitElement {
       }
 
       /* ── Scoreboard ─────────────────────────────────── */
-      .scoreboard {
+      .ht-scoreboard {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
@@ -137,7 +138,7 @@ class HockeyTrackerCard extends LitElement {
         border-bottom: 1px solid var(--divider-color);
         margin-bottom: 8px;
       }
-      .team-col {
+      .ht-team {
         flex: 1;
         display: flex;
         flex-direction: column;
@@ -145,31 +146,31 @@ class HockeyTrackerCard extends LitElement {
         gap: 5px;
         min-width: 0;
       }
-      .team-logo-img {
+      .ht-logo {
         object-fit: contain;
       }
-      .team-logo-icon {
+      .ht-logo-icon {
         --mdc-icon-size: 48px;
         color: var(--primary-color);
       }
-      .team-name {
+      .ht-team-name {
         font-size: 0.78rem;
         text-align: center;
         color: var(--secondary-text-color);
         line-height: 1.2;
         word-break: break-word;
       }
-      .score {
+      .ht-score {
         font-size: 2.4rem;
         font-weight: 700;
         color: var(--primary-text-color);
         line-height: 1;
       }
-      .score-dash {
+      .ht-score-dash {
         font-size: 1.4rem;
         color: var(--secondary-text-color);
       }
-      .mid-col {
+      .ht-mid {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -177,20 +178,20 @@ class HockeyTrackerCard extends LitElement {
         gap: 4px;
         flex-shrink: 0;
       }
-      .at-sign {
+      .ht-at-sign {
         font-size: 1.1rem;
         color: var(--secondary-text-color);
         font-weight: 600;
       }
 
-      /* ── Period / stats ─────────────────────────────── */
-      .period-row, .stats-row, .venue-row {
+      /* ── Period / game info rows ─────────────────────── */
+      .ht-period, .ht-venue {
         text-align: center;
         font-size: 0.82rem;
         color: var(--secondary-text-color);
         margin-bottom: 4px;
       }
-      .stats-grid {
+      .ht-shots {
         display: flex;
         justify-content: space-between;
         font-size: 0.8rem;
@@ -198,9 +199,7 @@ class HockeyTrackerCard extends LitElement {
         padding: 0 2px;
         margin-bottom: 4px;
       }
-
-      /* ── PRE: start time ────────────────────────────── */
-      .start-time {
+      .ht-start-time {
         text-align: center;
         font-size: 0.9rem;
         color: var(--primary-text-color);
@@ -208,12 +207,12 @@ class HockeyTrackerCard extends LitElement {
         margin-bottom: 4px;
       }
 
-      /* ── Upcoming / no game ─────────────────────────── */
-      .upcoming {
+      /* ── Upcoming / next game ────────────────────────── */
+      .ht-next-game {
         padding: 10px 0 4px;
         border-top: 1px solid var(--divider-color);
       }
-      .upcoming-label {
+      .ht-next-game-label {
         font-size: 0.72rem;
         font-weight: 700;
         text-transform: uppercase;
@@ -221,14 +220,14 @@ class HockeyTrackerCard extends LitElement {
         color: var(--secondary-text-color);
         margin-bottom: 6px;
       }
-      .upcoming-teams {
+      .ht-next-game-teams {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 8px;
         margin-bottom: 8px;
       }
-      .upcoming-team {
+      .ht-next-game-team {
         flex: 1;
         display: flex;
         flex-direction: column;
@@ -238,37 +237,44 @@ class HockeyTrackerCard extends LitElement {
         color: var(--secondary-text-color);
         text-align: center;
       }
-      .upcoming-at {
+      .ht-next-game-at {
         font-size: 0.9rem;
         color: var(--secondary-text-color);
         flex-shrink: 0;
       }
-      .upcoming-time {
+      .ht-next-game-time {
         text-align: center;
         font-size: 0.9rem;
         font-weight: 500;
         color: var(--primary-text-color);
       }
-      .upcoming-venue {
+      .ht-next-game-venue {
         text-align: center;
         font-size: 0.8rem;
         color: var(--secondary-text-color);
         margin-top: 2px;
       }
-      .no-games {
+
+      /* ── No game / off-season ────────────────────────── */
+      .ht-no-games {
         padding: 16px 0 8px;
         text-align: center;
         color: var(--secondary-text-color);
         font-size: 0.88rem;
       }
+      .ht-no-games-logo {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 10px;
+      }
 
       /* ── Recent games ───────────────────────────────── */
-      .recent-games {
+      .ht-recent {
         border-top: 1px solid var(--divider-color);
         margin-top: 10px;
         padding-top: 8px;
       }
-      .section-label {
+      .ht-section-label {
         font-size: 0.72rem;
         font-weight: 700;
         text-transform: uppercase;
@@ -276,7 +282,7 @@ class HockeyTrackerCard extends LitElement {
         color: var(--secondary-text-color);
         margin-bottom: 6px;
       }
-      .recent-row {
+      .ht-recent-row {
         display: flex;
         align-items: center;
         gap: 8px;
@@ -284,28 +290,28 @@ class HockeyTrackerCard extends LitElement {
         font-size: 0.82rem;
         border-bottom: 1px solid var(--divider-color);
       }
-      .recent-row:last-child { border-bottom: none; }
-      .result {
+      .ht-recent-row:last-child { border-bottom: none; }
+      .ht-result {
         font-weight: 700;
         font-size: 0.78rem;
         width: 16px;
         flex-shrink: 0;
       }
-      .result-w { color: #388e3c; }
-      .result-l { color: #d32f2f; }
-      .recent-opp {
+      .ht-result--win  { color: #388e3c; }
+      .ht-result--loss { color: #d32f2f; }
+      .ht-opponent {
         flex: 1;
         color: var(--primary-text-color);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      .recent-score {
+      .ht-recent-score {
         font-weight: 600;
         color: var(--primary-text-color);
         flex-shrink: 0;
       }
-      .recent-date {
+      .ht-recent-date {
         color: var(--secondary-text-color);
         flex-shrink: 0;
         font-size: 0.78rem;
@@ -374,23 +380,23 @@ class HockeyTrackerCard extends LitElement {
 
     const stateObj = this.hass.states[this.config.entity];
     if (!stateObj) {
-      return html`<ha-card><div class="content">Entity not found: ${this.config.entity}</div></ha-card>`;
+      return html`<ha-card><div class="ht-content">Entity not found: ${this.config.entity}</div></ha-card>`;
     }
 
     const state = stateObj.state;
     const a = stateObj.attributes;
     const mode = this._displayMode(state, a);
 
-    const badgeMap = { LIVE: "badge-live", PRE: "badge-pre", FINAL: "badge-final", NO_GAME: "badge-none" };
+    const badgeClass = { LIVE: "ht-badge--live", PRE: "ht-badge--pre", FINAL: "ht-badge--final", NO_GAME: "ht-badge--none" }[state] ?? "ht-badge--none";
     const badgeLabel = { LIVE: "Live", PRE: "Pre-Game", FINAL: "Final", NO_GAME: "No Game" }[state] ?? state;
 
     return html`
       <ha-card>
-        <div class="content">
-          <div class="top-bar">
-            <span class="badge ${badgeMap[state] ?? 'badge-none'}">${badgeLabel}</span>
-            <span class="card-title">${this._cardTitle(a, stateObj)}</span>
-            <ha-icon-button class="refresh-btn" label="Refresh" @click=${this._refresh}>
+        <div class="ht-content">
+          <div class="ht-header">
+            <span class="ht-badge ${badgeClass}">${badgeLabel}</span>
+            <span class="ht-title">${this._cardTitle(a, stateObj)}</span>
+            <ha-icon-button class="ht-refresh-btn" label="Refresh" @click=${this._refresh}>
               <ha-icon icon="mdi:refresh"></ha-icon>
             </ha-icon-button>
           </div>
@@ -415,47 +421,47 @@ class HockeyTrackerCard extends LitElement {
     const showScores = state !== "PRE";
 
     return html`
-      <div class="scoreboard">
-        <div class="team-col">
+      <div class="ht-scoreboard">
+        <div class="ht-team">
           ${this._logo(a.away_logo_url)}
-          <div class="team-name">${a.away_team ?? "Away"}</div>
+          <div class="ht-team-name">${a.away_team ?? "Away"}</div>
           ${showScores
-            ? html`<div class="score">${a.away_score ?? "—"}</div>`
-            : html`<div class="score-dash">—</div>`}
+            ? html`<div class="ht-score">${a.away_score ?? "—"}</div>`
+            : html`<div class="ht-score-dash">—</div>`}
         </div>
 
-        <div class="mid-col">
-          <span class="at-sign">@</span>
+        <div class="ht-mid">
+          <span class="ht-at-sign">@</span>
         </div>
 
-        <div class="team-col">
+        <div class="ht-team">
           ${this._logo(a.home_logo_url)}
-          <div class="team-name">${a.home_team ?? "Home"}</div>
+          <div class="ht-team-name">${a.home_team ?? "Home"}</div>
           ${showScores
-            ? html`<div class="score">${a.home_score ?? "—"}</div>`
-            : html`<div class="score-dash">—</div>`}
+            ? html`<div class="ht-score">${a.home_score ?? "—"}</div>`
+            : html`<div class="ht-score-dash">—</div>`}
         </div>
       </div>
 
       ${state === "PRE" ? html`
-        <div class="start-time">${this._fmtGameTime(a.start_time)}</div>
+        <div class="ht-start-time">${this._fmtGameTime(a.start_time)}</div>
       ` : ""}
 
       ${state === "LIVE" && (a.period || a.clock) ? html`
-        <div class="period-row">
+        <div class="ht-period">
           ${a.period ? `Period ${a.period}` : ""}${a.clock ? ` · ${a.clock}` : ""}
         </div>
       ` : ""}
 
       ${this.config.show_shots && showScores && (a.away_shots != null || a.home_shots != null) ? html`
-        <div class="stats-grid">
+        <div class="ht-shots">
           <span>${a.away_shots ?? "—"}</span>
           <span>Shots on Goal</span>
           <span>${a.home_shots ?? "—"}</span>
         </div>
       ` : ""}
 
-      ${a.venue ? html`<div class="venue-row">${a.venue}</div>` : ""}
+      ${a.venue ? html`<div class="ht-venue">${a.venue}</div>` : ""}
     `;
   }
 
@@ -464,14 +470,14 @@ class HockeyTrackerCard extends LitElement {
   // ------------------------------------------------------------------
 
   _renderUpcoming(a, state) {
-    // PRE but >30 min away — we already have the game data
+    // PRE but >30 min away — game data already available
     if (state === "PRE") {
       return html`
-        <div class="upcoming">
-          <div class="upcoming-label">Today's Game</div>
+        <div class="ht-next-game">
+          <div class="ht-next-game-label">Today's Game</div>
           ${this._upcomingTeams(a.away_logo_url, a.away_team, a.home_logo_url, a.home_team)}
-          <div class="upcoming-time">${this._fmtGameTime(a.start_time)}</div>
-          ${a.venue ? html`<div class="upcoming-venue">${a.venue}</div>` : ""}
+          <div class="ht-next-game-time">${this._fmtGameTime(a.start_time)}</div>
+          ${a.venue ? html`<div class="ht-next-game-venue">${a.venue}</div>` : ""}
         </div>
       `;
     }
@@ -480,28 +486,35 @@ class HockeyTrackerCard extends LitElement {
 
     const hasNext = a.next_game_date;
     if (!hasNext) {
-      return html`<div class="no-games">No upcoming games scheduled</div>`;
+      return html`
+        <div class="ht-no-games">
+          ${this.config.show_logo && a.team_logo_url ? html`
+            <div class="ht-no-games-logo">${this._logo(a.team_logo_url)}</div>
+          ` : ""}
+          <div class="ht-no-games-text">No upcoming games scheduled</div>
+        </div>
+      `;
     }
 
     return html`
-      <div class="upcoming">
-        <div class="upcoming-label">Next Game</div>
+      <div class="ht-next-game">
+        <div class="ht-next-game-label">Next Game</div>
         ${this._upcomingTeams(a.next_game_away_logo_url, a.next_game_away_team, a.next_game_home_logo_url, a.next_game_home_team)}
-        <div class="upcoming-time">${this._fmtGameTime(a.next_game_date)}</div>
-        ${a.next_game_venue ? html`<div class="upcoming-venue">${a.next_game_venue}</div>` : ""}
+        <div class="ht-next-game-time">${this._fmtGameTime(a.next_game_date)}</div>
+        ${a.next_game_venue ? html`<div class="ht-next-game-venue">${a.next_game_venue}</div>` : ""}
       </div>
     `;
   }
 
   _upcomingTeams(awayLogo, awayName, homeLogo, homeName) {
     return html`
-      <div class="upcoming-teams">
-        <div class="upcoming-team">
+      <div class="ht-next-game-teams">
+        <div class="ht-next-game-team">
           ${this._logo(awayLogo)}
           <span>${awayName ?? "Away"}</span>
         </div>
-        <span class="upcoming-at">@</span>
-        <div class="upcoming-team">
+        <span class="ht-next-game-at">@</span>
+        <div class="ht-next-game-team">
           ${this._logo(homeLogo)}
           <span>${homeName ?? "Home"}</span>
         </div>
@@ -516,14 +529,14 @@ class HockeyTrackerCard extends LitElement {
   _renderRecentGames(games) {
     const count = Math.min(this.config.recent_games_count || 3, games.length);
     return html`
-      <div class="recent-games">
-        <div class="section-label">Recent Games</div>
+      <div class="ht-recent">
+        <div class="ht-section-label">Recent Games</div>
         ${games.slice(0, count).map(g => html`
-          <div class="recent-row">
-            <span class="result ${g.win ? 'result-w' : 'result-l'}">${g.win ? "W" : "L"}</span>
-            <span class="recent-opp">${g.is_home ? "vs" : "@"} ${g.opponent}</span>
-            <span class="recent-score">${g.team_score}–${g.opponent_score}</span>
-            <span class="recent-date">${this._fmtShortDate(g.date)}</span>
+          <div class="ht-recent-row">
+            <span class="ht-result ${g.win ? 'ht-result--win' : 'ht-result--loss'}">${g.win ? "W" : "L"}</span>
+            <span class="ht-opponent">${g.is_home ? "vs" : "@"} ${g.opponent}</span>
+            <span class="ht-recent-score">${g.team_score}–${g.opponent_score}</span>
+            <span class="ht-recent-date">${this._fmtShortDate(g.date)}</span>
           </div>
         `)}
       </div>
@@ -548,14 +561,14 @@ class HockeyTrackerCard extends LitElement {
     if (url) {
       return html`
         <img
-          class="team-logo-img"
+          class="ht-logo"
           style="width:${size}px;height:${size}px"
           src="${url}"
           alt=""
           @error=${(e) => { e.target.style.display = "none"; }}
         >`;
     }
-    return html`<ha-icon class="team-logo-icon" style="--mdc-icon-size:${size}px" icon="mdi:hockey-puck"></ha-icon>`;
+    return html`<ha-icon class="ht-logo-icon" style="--mdc-icon-size:${size}px" icon="mdi:hockey-puck"></ha-icon>`;
   }
 
   _fmtGameTime(iso) {
