@@ -1,6 +1,6 @@
 /**
- * ECHL Tracker Card v1.1.3
- * https://github.com/linkian19/ha-echl-tracker-card
+ * Hockey Tracker Card v1.2.0
+ * https://github.com/linkian19/ha-hockey-tracker-card
  */
 import { LitElement, html, css } from "https://unpkg.com/lit@2.8.0/index.js?module";
 
@@ -8,7 +8,7 @@ import { LitElement, html, css } from "https://unpkg.com/lit@2.8.0/index.js?modu
 // Editor
 // ---------------------------------------------------------------------------
 
-class EchlTrackerCardEditor extends LitElement {
+class HockeyTrackerCardEditor extends LitElement {
   static get properties() {
     return { hass: {}, config: {} };
   }
@@ -62,7 +62,7 @@ class EchlTrackerCardEditor extends LitElement {
       <ha-form
         .hass=${this.hass}
         .data=${this.config}
-        .schema=${EchlTrackerCardEditor._schema}
+        .schema=${HockeyTrackerCardEditor._schema}
         .computeLabel=${this._computeLabel}
         @value-changed=${this._valueChanged}
       ></ha-form>
@@ -70,13 +70,13 @@ class EchlTrackerCardEditor extends LitElement {
   }
 }
 
-customElements.define("echl-tracker-card-editor", EchlTrackerCardEditor);
+customElements.define("hockey-tracker-card-editor", HockeyTrackerCardEditor);
 
 // ---------------------------------------------------------------------------
 // Card
 // ---------------------------------------------------------------------------
 
-class EchlTrackerCard extends LitElement {
+class HockeyTrackerCard extends LitElement {
   static get properties() {
     return { hass: {}, config: {} };
   }
@@ -314,7 +314,7 @@ class EchlTrackerCard extends LitElement {
   }
 
   static getConfigElement() {
-    return document.createElement("echl-tracker-card-editor");
+    return document.createElement("hockey-tracker-card-editor");
   }
 
   static getStubConfig() {
@@ -478,21 +478,15 @@ class EchlTrackerCard extends LitElement {
 
     if (!this.config.show_next_game) return html``;
 
-    // Build next-game data from attributes
     const hasNext = a.next_game_date;
     if (!hasNext) {
       return html`<div class="no-games">No upcoming games scheduled</div>`;
     }
 
-    const awayLogo = a.next_game_away_logo_url;
-    const homeLogo = a.next_game_home_logo_url;
-    const awayTeam = a.next_game_away_team;
-    const homeTeam = a.next_game_home_team;
-
     return html`
       <div class="upcoming">
         <div class="upcoming-label">Next Game</div>
-        ${this._upcomingTeams(awayLogo, awayTeam, homeLogo, homeTeam)}
+        ${this._upcomingTeams(a.next_game_away_logo_url, a.next_game_away_team, a.next_game_home_logo_url, a.next_game_home_team)}
         <div class="upcoming-time">${this._fmtGameTime(a.next_game_date)}</div>
         ${a.next_game_venue ? html`<div class="upcoming-venue">${a.next_game_venue}</div>` : ""}
       </div>
@@ -604,13 +598,13 @@ class EchlTrackerCard extends LitElement {
   }
 }
 
-customElements.define("echl-tracker-card", EchlTrackerCard);
+customElements.define("hockey-tracker-card", HockeyTrackerCard);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: "echl-tracker-card",
-  name: "ECHL Tracker Card",
-  description: "Live scores, schedule, and stats for an ECHL team.",
+  type: "hockey-tracker-card",
+  name: "Hockey Tracker Card",
+  description: "Live scores, schedule, and stats for ECHL, AHL, or NHL teams.",
   preview: false,
-  documentationURL: "https://github.com/linkian19/ha-echl-tracker-card",
+  documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
 });
