@@ -1,5 +1,5 @@
 /**
- * ECHL Tracker Card v1.1.2
+ * ECHL Tracker Card v1.1.3
  * https://github.com/linkian19/ha-echl-tracker-card
  */
 import { LitElement, html, css } from "https://unpkg.com/lit@2.8.0/index.js?module";
@@ -33,7 +33,7 @@ class EchlTrackerCardEditor extends LitElement {
       {
         name: "logo_size",
         default: 64,
-        selector: { number: { min: 24, max: 120, step: 4, mode: "slider" } },
+        selector: { number: { min: 24, max: 200, step: 4, mode: "slider" } },
       },
     ];
   }
@@ -47,7 +47,7 @@ class EchlTrackerCardEditor extends LitElement {
       show_next_game:     "Show next game when no game is active",
       show_recent_games:  "Show recent game results",
       recent_games_count: "Number of recent games to show (1–10, default: 3)",
-      logo_size:          "Logo size in px (24–120, default: 64)",
+      logo_size:          "Logo size in px (24–200, default: 64)",
     }[schema.name] ?? schema.name;
   }
 
@@ -111,8 +111,8 @@ class EchlTrackerCard extends LitElement {
       .card-title {
         flex: 1;
         text-align: center;
-        font-size: 0.85rem;
-        font-weight: 600;
+        font-size: 1.1rem;
+        font-weight: 700;
         color: var(--primary-text-color);
         white-space: nowrap;
         overflow: hidden;
