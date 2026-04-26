@@ -1,5 +1,5 @@
 /**
- * Hockey Tracker Card v1.2.6
+ * Hockey Tracker Card v1.2.7
  * https://github.com/linkian19/ha-hockey-tracker-card
  */
 import { LitElement, html, css } from "https://unpkg.com/lit@2.8.0/index.js?module";
@@ -576,7 +576,7 @@ class HockeyTrackerCard extends LitElement {
 
       ${state === "LIVE" && (a.period || a.clock) ? html`
         <div class="ht-period">
-          ${a.period ? `Period ${a.period}` : ""}${a.clock ? ` · ${a.clock}` : ""}
+          ${a.period ? this._periodLabel(a.period) : ""}${a.clock ? ` · ${a.clock}` : ""}
         </div>
       ` : ""}
 
@@ -763,6 +763,12 @@ class HockeyTrackerCard extends LitElement {
         >`;
     }
     return html`<ha-icon class="ht-logo-icon" style="--mdc-icon-size:${size}px" icon="mdi:hockey-puck"></ha-icon>`;
+  }
+
+  _periodLabel(period) {
+    if (period <= 3) return `Period ${period}`;
+    if (period === 4) return "OT";
+    return `OT${period - 3}`;
   }
 
   _isToday(iso) {
