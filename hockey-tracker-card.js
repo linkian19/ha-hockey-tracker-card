@@ -1,5 +1,5 @@
 /**
- * Hockey Tracker Card v1.2.3
+ * Hockey Tracker Card v1.2.4
  * https://github.com/linkian19/ha-hockey-tracker-card
  */
 import { LitElement, html, css } from "https://unpkg.com/lit@2.8.0/index.js?module";
@@ -266,6 +266,7 @@ class HockeyTrackerCard extends LitElement {
 
       /* ── No game / off-season ────────────────────────── */
       .ht-no-games {
+        border-top: 1px solid var(--divider-color);
         padding: 16px 0 8px;
         text-align: center;
         color: var(--secondary-text-color);
@@ -626,7 +627,7 @@ class HockeyTrackerCard extends LitElement {
         <span class="ht-event-meta">P${e.period} · ${e.time}</span>
         <span class="ht-event-abbrev">${e.team_abbrev}</span>
         <span class="ht-event-body">
-          #${e.player_number} ${e.player_name}${tag ? html`<span class="ht-event-tag">${tag}</span>` : ""}${assists}
+          ${e.player_number != null ? `#${e.player_number} ` : ""}${e.player_name}${tag ? html`<span class="ht-event-tag">${tag}</span>` : ""}${assists}
         </span>
       </div>
     `;
@@ -638,7 +639,7 @@ class HockeyTrackerCard extends LitElement {
         <span class="ht-event-dot"></span>
         <span class="ht-event-meta">P${e.period} · ${e.time}</span>
         <span class="ht-event-abbrev">${e.team_abbrev}</span>
-        <span class="ht-event-body">#${e.player_number} ${e.player_name} — ${e.description} (${e.minutes}min)</span>
+        <span class="ht-event-body">${e.player_number != null ? `#${e.player_number} ` : ""}${e.player_name} — ${e.description} (${e.minutes}min)</span>
       </div>
     `;
   }
@@ -673,7 +674,7 @@ class HockeyTrackerCard extends LitElement {
     if (a.home_team && a.away_team) {
       return a.is_home ? a.home_team : a.away_team;
     }
-    return stateObj.attributes.friendly_name ?? "";
+    return a.team_name || stateObj.attributes.friendly_name?.replace(/ Game$/i, "") || "";
   }
 
   _logo(url, size) {
