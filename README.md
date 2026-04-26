@@ -71,6 +71,8 @@ entity: sensor.kansas_city_mavericks_game
 | `show_next_game` | boolean | `true` | Show next game info when no game is active |
 | `show_recent_games` | boolean | `false` | Show recent game results below the main view |
 | `recent_games_count` | number | `3` | Number of recent games to show (1–10) |
+| `show_events` | boolean | `false` | Show live game events (goals & penalties) during active games |
+| `events_count` | number | `10` | Number of events to display (3–25) |
 
 ### Example with all options
 
@@ -84,6 +86,8 @@ show_shots: true
 show_next_game: true
 show_recent_games: true
 recent_games_count: 5
+show_events: true
+events_count: 10
 ```
 
 ---
@@ -143,6 +147,17 @@ All elements in the card have stable, prefixed CSS class names so you can target
 | `.ht-no-games` | No upcoming games container |
 | `.ht-no-games-logo` | Team logo wrapper in no-games state |
 | `.ht-no-games-text` | "No upcoming games scheduled" text |
+| `.ht-events` | Game events section container |
+| `.ht-event-row` | Individual event row |
+| `.ht-event-goal` | Modifier on goal rows |
+| `.ht-event-penalty` | Modifier on penalty rows |
+| `.ht-event--ours` | Modifier when event involves the tracked team |
+| `.ht-event-dot` | Colored dot indicator (green=goal, orange=penalty) |
+| `.ht-event-meta` | Period and time label |
+| `.ht-event-abbrev` | Team abbreviation |
+| `.ht-event-body` | Player name, tag, and assists |
+| `.ht-event-tag` | PP / SH / EN badge on goals |
+| `.ht-event-assists` | Assist names on goals |
 | `.ht-recent` | Recent games section |
 | `.ht-section-label` | "Recent Games" section header |
 | `.ht-recent-row` | Individual recent game row |

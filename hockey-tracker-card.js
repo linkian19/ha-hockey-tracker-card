@@ -1,5 +1,5 @@
 /**
- * Hockey Tracker Card v1.2.1
+ * Hockey Tracker Card v1.2.2
  * https://github.com/linkian19/ha-hockey-tracker-card
  */
 import { LitElement, html, css } from "https://unpkg.com/lit@2.8.0/index.js?module";
@@ -30,6 +30,12 @@ class HockeyTrackerCardEditor extends LitElement {
         default: 3,
         selector: { number: { min: 1, max: 10, step: 1, mode: "box" } },
       },
+      { name: "show_events", selector: { boolean: {} } },
+      {
+        name: "events_count",
+        default: 10,
+        selector: { number: { min: 3, max: 25, step: 1, mode: "box" } },
+      },
       {
         name: "logo_size",
         default: 64,
@@ -47,6 +53,8 @@ class HockeyTrackerCardEditor extends LitElement {
       show_next_game:     "Show next game when no game is active",
       show_recent_games:  "Show recent game results",
       recent_games_count: "Number of recent games to show (1–10, default: 3)",
+      show_events:        "Show live game events (goals & penalties) during active games",
+      events_count:       "Number of events to display (3–25, default: 10)",
       logo_size:          "Logo size in px (24–200, default: 64)",
     }[schema.name] ?? schema.name;
   }
@@ -175,6 +183,7 @@ class HockeyTrackerCard extends LitElement {
         flex-direction: column;
         align-items: center;
         justify-content: center;
+        align-self: stretch;
         gap: 4px;
         flex-shrink: 0;
       }
@@ -268,6 +277,65 @@ class HockeyTrackerCard extends LitElement {
         margin-bottom: 10px;
       }
 
+      /* ── Game events (goals & penalties) ───────────── */
+      .ht-events {
+        border-top: 1px solid var(--divider-color);
+        margin-top: 8px;
+        padding-top: 8px;
+      }
+      .ht-event-row {
+        display: grid;
+        grid-template-columns: 10px 56px 32px 1fr;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 0;
+        font-size: 0.78rem;
+        border-bottom: 1px solid var(--divider-color);
+        line-height: 1.3;
+      }
+      .ht-event-row:last-child { border-bottom: none; }
+      .ht-event-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .ht-event-goal .ht-event-dot  { background: #388e3c; }
+      .ht-event-penalty .ht-event-dot { background: #e65100; }
+      .ht-event-meta {
+        color: var(--secondary-text-color);
+        font-size: 0.72rem;
+        white-space: nowrap;
+      }
+      .ht-event-abbrev {
+        font-weight: 700;
+        font-size: 0.74rem;
+        color: var(--primary-text-color);
+      }
+      .ht-event-body {
+        color: var(--secondary-text-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.78rem;
+      }
+      .ht-event--ours .ht-event-body { color: var(--primary-text-color); }
+      .ht-event-tag {
+        display: inline-block;
+        padding: 0 3px;
+        border-radius: 3px;
+        font-size: 0.62rem;
+        font-weight: 700;
+        background: var(--primary-color, #03a9f4);
+        color: var(--text-primary-color, #fff);
+        vertical-align: middle;
+        margin-left: 2px;
+      }
+      .ht-event-assists {
+        color: var(--secondary-text-color);
+        font-size: 0.72rem;
+      }
+
       /* ── Recent games ───────────────────────────────── */
       .ht-recent {
         border-top: 1px solid var(--divider-color);
@@ -331,6 +399,8 @@ class HockeyTrackerCard extends LitElement {
       show_next_game: true,
       show_recent_games: false,
       recent_games_count: 3,
+      show_events: false,
+      events_count: 10,
       logo_size: 64,
     };
   }
@@ -343,6 +413,8 @@ class HockeyTrackerCard extends LitElement {
       show_next_game: true,
       show_recent_games: false,
       recent_games_count: 3,
+      show_events: false,
+      events_count: 10,
       logo_size: 64,
       ...config,
     };
@@ -404,6 +476,10 @@ class HockeyTrackerCard extends LitElement {
           ${mode === "game"
             ? this._renderGame(a, state)
             : this._renderUpcoming(a, state)}
+
+          ${this.config.show_events && mode === "game" && a.game_events?.length
+            ? this._renderGameEvents(a.game_events)
+            : ""}
 
           ${this.config.show_recent_games && a.recent_games?.length
             ? this._renderRecentGames(a.recent_games)
@@ -518,6 +594,50 @@ class HockeyTrackerCard extends LitElement {
           ${this._logo(homeLogo)}
           <span>${homeName ?? "Home"}</span>
         </div>
+      </div>
+    `;
+  }
+
+  // ------------------------------------------------------------------
+  // Game events (goals & penalties)
+  // ------------------------------------------------------------------
+
+  _renderGameEvents(events) {
+    const count = Math.min(this.config.events_count || 10, events.length);
+    return html`
+      <div class="ht-events">
+        <div class="ht-section-label">Game Events</div>
+        ${events.slice(0, count).map(e =>
+          e.type === "goal" ? this._renderGoal(e) : this._renderPenalty(e)
+        )}
+      </div>
+    `;
+  }
+
+  _renderGoal(e) {
+    const tag = e.is_power_play ? "PP" : e.is_short_handed ? "SH" : e.is_empty_net ? "EN" : "";
+    const assists = e.assists?.length
+      ? html`<span class="ht-event-assists"> · ${e.assists.join(", ")}</span>`
+      : "";
+    return html`
+      <div class="ht-event-row ht-event-goal ${e.is_tracked_team ? "ht-event--ours" : ""}">
+        <span class="ht-event-dot"></span>
+        <span class="ht-event-meta">P${e.period} · ${e.time}</span>
+        <span class="ht-event-abbrev">${e.team_abbrev}</span>
+        <span class="ht-event-body">
+          #${e.player_number} ${e.player_name}${tag ? html`<span class="ht-event-tag">${tag}</span>` : ""}${assists}
+        </span>
+      </div>
+    `;
+  }
+
+  _renderPenalty(e) {
+    return html`
+      <div class="ht-event-row ht-event-penalty ${e.is_tracked_team ? "ht-event--ours" : ""}">
+        <span class="ht-event-dot"></span>
+        <span class="ht-event-meta">P${e.period} · ${e.time}</span>
+        <span class="ht-event-abbrev">${e.team_abbrev}</span>
+        <span class="ht-event-body">#${e.player_number} ${e.player_name} — ${e.description} (${e.minutes}min)</span>
       </div>
     `;
   }
