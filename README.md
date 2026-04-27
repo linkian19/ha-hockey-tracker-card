@@ -2,7 +2,7 @@
 
 A [Home Assistant](https://www.home-assistant.io/) Lovelace card that displays live scores, schedule, and recent results for any **ECHL**, **AHL**, or **NHL** team.
 
-> **Requires:** [ha-hockey-tracker](https://github.com/linkian19/ha-hockey-tracker) integration to be installed and a team sensor configured first.
+> **Requires:** [ha-hockey-tracker](https://github.com/linkian19/ha-hockey-tracker) integration (v1.3.0+) to be installed and a team sensor configured first.
 
 ---
 
@@ -13,11 +13,13 @@ A [Home Assistant](https://www.home-assistant.io/) Lovelace card that displays l
 - State badge in top bar: `LIVE`, `PRE-GAME`, `FINAL`, `NO GAME`
 - Team name title centered in top bar (auto-derived or custom)
 - Configurable team logo size
-- 30-minute post-game window — keeps the scoreboard visible after a final horn
+- 2-hour post-game window — server-controlled, keeps the final scoreboard visible well after the buzzer
+- "Updated X ago" timestamp — always know how fresh the data is
 - Pre-game upcoming view with team matchup, start time, and venue
 - Next game preview when no game is active
 - Team logo displayed during off-season / no upcoming games
-- Optional recent game results list (W/L, score, opponent, date)
+- Optional live game events feed (goals & penalties with PP/SH/EN badges)
+- Optional recent game results list (W/L, score, opponent, date) — rows link to official game summaries
 - Full UI editor — no YAML required
 - Named CSS classes for styling with [card-mod](https://github.com/thomasloven/lovelace-card-mod)
 
@@ -69,6 +71,7 @@ entity: sensor.kansas_city_mavericks_game
 | `logo_size` | number | `64` | Logo size in pixels (24–200) |
 | `show_shots` | boolean | `true` | Show shots on goal row during live/final games |
 | `show_next_game` | boolean | `true` | Show next game info when no game is active |
+| `show_last_updated` | boolean | `true` | Show "Updated X ago" timestamp below the header |
 | `show_recent_games` | boolean | `false` | Show recent game results below the main view |
 | `recent_games_count` | number | `3` | Number of recent games to show (1–10) |
 | `collapsible_recent` | boolean | `true` | Show a collapse toggle on the Recent Games section |
@@ -87,6 +90,7 @@ show_logo: true
 logo_size: 80
 show_shots: true
 show_next_game: true
+show_last_updated: true
 show_recent_games: true
 recent_games_count: 5
 collapsible_recent: true
@@ -107,9 +111,17 @@ The card automatically switches between views based on game state:
 | Game in progress (`LIVE`) | Full scoreboard with period/clock |
 | Within 30 min of puck drop (`PRE`) | Full scoreboard layout, no scores yet |
 | More than 30 min before game (`PRE`) | Upcoming matchup with start time |
-| Within 30 min of final horn (`FINAL`) | Full scoreboard with final scores |
-| More than 30 min after final, or `NO_GAME` with upcoming game | Next game preview |
+| Game just ended (`FINAL`) | Full scoreboard with final scores (stays for up to 2 hours) |
+| `NO_GAME` with upcoming game | Next game preview |
 | `NO_GAME` with no upcoming games (off-season, eliminated) | Team logo + "No upcoming games scheduled" |
+
+The 2-hour post-game window is managed server-side by the integration, so it persists across browser refreshes and new HA sessions.
+
+---
+
+## Notifications
+
+Notification alerts (win, pre-game, goal) are configured in the **integration**, not the card. Go to **Settings → Devices & Services → Hockey Tracker → Configure** to set them up. See the [integration README](https://github.com/linkian19/ha-hockey-tracker) for details.
 
 ---
 
@@ -130,6 +142,7 @@ All elements in the card have stable, prefixed CSS class names so you can target
 | `.ht-badge--none` | Badge modifier — no game |
 | `.ht-title` | Card title text |
 | `.ht-refresh-btn` | Refresh icon button |
+| `.ht-last-updated` | "Updated X ago" timestamp line |
 | `.ht-scoreboard` | Scoreboard container |
 | `.ht-team` | Team column (logo + name + score) |
 | `.ht-logo` | Team logo `<img>` |
@@ -169,12 +182,14 @@ All elements in the card have stable, prefixed CSS class names so you can target
 | `.ht-section-label` | Section label text ("Recent Games", "Game Events") |
 | `.ht-collapse-btn` | Chevron collapse/expand toggle icon |
 | `.ht-recent-row` | Individual recent game row |
+| `.ht-recent-row--link` | Modifier on rows that have a clickable game summary link |
 | `.ht-result` | W/L result indicator |
 | `.ht-result--win` | Win result color |
 | `.ht-result--loss` | Loss result color |
 | `.ht-opponent` | Opponent name in recent row |
 | `.ht-recent-score` | Score in recent row |
 | `.ht-recent-date` | Date in recent row |
+| `.ht-recent-link-icon` | External link icon on clickable recent game rows |
 
 ### Example card-mod usage
 
