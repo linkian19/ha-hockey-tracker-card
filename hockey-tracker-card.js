@@ -1,5 +1,5 @@
 /**
- * Hockey Tracker Card v1.2.7
+ * Hockey Tracker Card v1.3.0
  * https://github.com/linkian19/ha-hockey-tracker-card
  */
 import { LitElement, html, css } from "https://unpkg.com/lit@2.8.0/index.js?module";
@@ -26,6 +26,7 @@ class HockeyTrackerCardEditor extends LitElement {
       events_count: 10,
       collapsible_events: true,
       logo_size: 64,
+      show_last_updated: true,
       ...config,
     };
   }
@@ -37,6 +38,7 @@ class HockeyTrackerCardEditor extends LitElement {
       { name: "show_logo", selector: { boolean: {} } },
       { name: "show_shots", selector: { boolean: {} } },
       { name: "show_next_game", selector: { boolean: {} } },
+      { name: "show_last_updated", selector: { boolean: {} } },
       { name: "show_recent_games", selector: { boolean: {} } },
       {
         name: "recent_games_count",
@@ -67,6 +69,7 @@ class HockeyTrackerCardEditor extends LitElement {
       show_logo:          "Show team logos",
       show_shots:         "Show shots on goal",
       show_next_game:     "Show next game when no game is active",
+      show_last_updated:  "Show time since last data refresh",
       show_recent_games:  "Show recent game results",
       recent_games_count: "Number of recent games to show (1–10, default: 3)",
       collapsible_recent:   "Allow recent games section to be collapsed",
@@ -108,13 +111,12 @@ class HockeyTrackerCard extends LitElement {
     return { hass: {}, config: {} };
   }
 
-  // Track when the sensor first entered FINAL state so we can apply the 30-min buffer
-  _finalAt = null;
-
   // Collapse state for optional sections
   _recentCollapsed = false;
   _eventsCollapsed = false;
   _prevLive = false;
+  // Timer for updating the "last updated X ago" display
+  _ageTimer = null;
 
   static get styles() {
     return css`
@@ -127,7 +129,7 @@ class HockeyTrackerCard extends LitElement {
       .ht-header {
         display: flex;
         align-items: center;
-        margin-bottom: 12px;
+        margin-bottom: 4px;
       }
       .ht-badge {
         padding: 3px 10px;
@@ -157,6 +159,13 @@ class HockeyTrackerCard extends LitElement {
         --mdc-icon-size: 18px;
         color: var(--secondary-text-color);
         margin-right: -4px;
+      }
+      .ht-last-updated {
+        text-align: right;
+        font-size: 0.68rem;
+        color: var(--disabled-color, #9e9e9e);
+        margin-bottom: 8px;
+        padding-right: 2px;
       }
 
       /* ── Scoreboard ─────────────────────────────────── */
@@ -394,6 +403,15 @@ class HockeyTrackerCard extends LitElement {
         padding: 3px 0;
         font-size: 0.82rem;
         border-bottom: 1px solid var(--divider-color);
+        cursor: default;
+      }
+      .ht-recent-row--link {
+        cursor: pointer;
+      }
+      .ht-recent-row--link:hover .ht-opponent,
+      .ht-recent-row--link:hover .ht-recent-score {
+        text-decoration: underline;
+        color: var(--primary-color);
       }
       .ht-recent-row:last-child { border-bottom: none; }
       .ht-result {
@@ -421,6 +439,12 @@ class HockeyTrackerCard extends LitElement {
         flex-shrink: 0;
         font-size: 0.78rem;
       }
+      .ht-recent-link-icon {
+        --mdc-icon-size: 13px;
+        color: var(--secondary-text-color);
+        flex-shrink: 0;
+        opacity: 0.6;
+      }
     `;
   }
 
@@ -442,6 +466,7 @@ class HockeyTrackerCard extends LitElement {
       events_count: 10,
       collapsible_events: true,
       logo_size: 64,
+      show_last_updated: true,
     };
   }
 
@@ -459,26 +484,31 @@ class HockeyTrackerCard extends LitElement {
       events_count: 10,
       collapsible_events: true,
       logo_size: 64,
+      show_last_updated: true,
       ...config,
     };
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    // Refresh the "X ago" age display every 30 seconds without a full HA update
+    this._ageTimer = setInterval(() => this.requestUpdate(), 30000);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    clearInterval(this._ageTimer);
+    this._ageTimer = null;
   }
 
   getCardSize() { return 4; }
 
   // ------------------------------------------------------------------
-  // Display mode
+  // Display mode — server manages the FINAL window, card just follows state
   // ------------------------------------------------------------------
 
   _displayMode(state, a) {
-    if (state === "LIVE") {
-      this._finalAt = null;
-      return "game";
-    }
-    if (state === "FINAL") {
-      if (!this._finalAt) this._finalAt = Date.now();
-      return (Date.now() - this._finalAt) / 60000 <= 30 ? "game" : "upcoming";
-    }
-    this._finalAt = null;
+    if (state === "LIVE" || state === "FINAL") return "game";
     if (state === "PRE" && a.start_time) {
       const minsUntil = (new Date(a.start_time) - Date.now()) / 60000;
       return minsUntil <= 30 ? "game" : "upcoming";
@@ -524,6 +554,10 @@ class HockeyTrackerCard extends LitElement {
             </ha-icon-button>
           </div>
 
+          ${this.config.show_last_updated !== false && a.last_fetched ? html`
+            <div class="ht-last-updated">Updated ${this._fmtAge(a.last_fetched)}</div>
+          ` : ""}
+
           ${mode === "game"
             ? this._renderGame(a, state)
             : this._renderUpcoming(a, state)}
@@ -541,7 +575,7 @@ class HockeyTrackerCard extends LitElement {
   }
 
   // ------------------------------------------------------------------
-  // Game view (LIVE, FINAL ≤30min, PRE ≤30min)
+  // Game view (LIVE, FINAL, PRE ≤30min)
   // ------------------------------------------------------------------
 
   _renderGame(a, state) {
@@ -593,7 +627,7 @@ class HockeyTrackerCard extends LitElement {
   }
 
   // ------------------------------------------------------------------
-  // Upcoming view (NO_GAME, PRE >30min, old FINAL)
+  // Upcoming view (NO_GAME, PRE >30min)
   // ------------------------------------------------------------------
 
   _renderUpcoming(a, state) {
@@ -726,11 +760,15 @@ class HockeyTrackerCard extends LitElement {
           ` : ""}
         </div>
         ${!collapsed ? games.slice(0, count).map(g => html`
-          <div class="ht-recent-row">
+          <div
+            class="ht-recent-row ${g.game_url ? "ht-recent-row--link" : ""}"
+            @click=${() => g.game_url && window.open(g.game_url, "_blank", "noopener")}
+          >
             <span class="ht-result ${g.win ? 'ht-result--win' : 'ht-result--loss'}">${g.win ? "W" : "L"}</span>
             <span class="ht-opponent">${g.is_home ? "vs" : "@"} ${g.opponent}</span>
             <span class="ht-recent-score">${g.team_score}–${g.opponent_score}</span>
             <span class="ht-recent-date">${this._fmtShortDate(g.date)}</span>
+            ${g.game_url ? html`<ha-icon class="ht-recent-link-icon" icon="mdi:open-in-new"></ha-icon>` : ""}
           </div>
         `) : ""}
       </div>
@@ -817,11 +855,34 @@ class HockeyTrackerCard extends LitElement {
     }
   }
 
+  _fmtAge(iso) {
+    if (!iso) return "";
+    try {
+      const secs = Math.floor((Date.now() - new Date(iso)) / 1000);
+      if (secs < 10) return "just now";
+      if (secs < 60) return `${secs}s ago`;
+      const mins = Math.floor(secs / 60);
+      if (mins < 60) return `${mins}m ago`;
+      const hrs = Math.floor(mins / 60);
+      return `${hrs}h ago`;
+    } catch {
+      return "";
+    }
+  }
+
   async _refresh() {
     if (!this.hass || !this.config.entity) return;
-    await this.hass.callService("homeassistant", "update_entity", {
-      entity_id: this.config.entity,
-    });
+    try {
+      // Use the integration's force_refresh service which also clears schedule cache
+      await this.hass.callService("hockey_tracker", "force_refresh", {
+        entity_id: this.config.entity,
+      });
+    } catch {
+      // Fallback if the integration version doesn't have the service yet
+      await this.hass.callService("homeassistant", "update_entity", {
+        entity_id: this.config.entity,
+      });
+    }
   }
 }
 
