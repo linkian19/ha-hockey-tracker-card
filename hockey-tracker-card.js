@@ -1,5 +1,5 @@
 /**
- * Hockey Tracker Card v1.3.0
+ * Hockey Tracker Card v1.3.2
  * https://github.com/linkian19/ha-hockey-tracker-card
  */
 import { LitElement, html, css } from "https://unpkg.com/lit@2.8.0/index.js?module";
@@ -893,6 +893,7 @@ window.customCards.push({
   type: "hockey-tracker-card",
   name: "Hockey Tracker Card",
   description: "Live scores, schedule, and stats for ECHL, AHL, or NHL teams.",
+  version: "1.3.2",
   preview: false,
   documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
 });
