@@ -1,8 +1,8 @@
 # Hockey Tracker Card
 
-A [Home Assistant](https://www.home-assistant.io/) Lovelace card that displays live scores, schedule, and recent results for any **ECHL**, **AHL**, or **NHL** team.
+A [Home Assistant](https://www.home-assistant.io/) Lovelace card that displays live scores, schedule, and recent results for any team tracked by the Hockey Tracker integration — supporting **15 leagues** including NHL, PWHL, AHL, ECHL, CHL, OHL, WHL, QMJHL, USHL, and more.
 
-> **Requires:** [ha-hockey-tracker](https://github.com/linkian19/ha-hockey-tracker) integration (v1.3.0+) to be installed and a team sensor configured first.
+> **Requires:** [ha-hockey-tracker](https://github.com/linkian19/ha-hockey-tracker) integration (v1.4.0+) to be installed and a team sensor configured first.
 
 ---
 
@@ -206,6 +206,12 @@ card_mod:
 ```
 
 > **Note:** The `hockey-tracker-card$` selector is required for card-mod to pierce the card's Shadow DOM. Add `!important` to overrides that don't apply.
+
+---
+
+## Attribution
+
+This card was inspired by [ha-teamtracker](https://github.com/vasqued2/ha-teamtracker) by [vasqued2](https://github.com/vasqued2).
 
 ---
 

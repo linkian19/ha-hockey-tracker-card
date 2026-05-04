@@ -1,6 +1,9 @@
 /**
- * Hockey Tracker Card v1.3.2
+ * Hockey Tracker Card v1.4.0
  * https://github.com/linkian19/ha-hockey-tracker-card
+ *
+ * Inspired by ha-teamtracker (https://github.com/vasqued2/ha-teamtracker) by vasqued2.
+ * Requires ha-hockey-tracker integration v1.4.0+.
  */
 import { LitElement, html, css } from "https://unpkg.com/lit@2.8.0/index.js?module";
 
