@@ -162,6 +162,10 @@ Notification alerts (win, pre-game, goal) are configured in the **integration**,
 |--------|------|---------|-------------|
 | `entity` | string | **required** | The Playoff Tracker sensor entity |
 | `title` | string | sensor name | Override the card title |
+| `show_logo` | boolean | `true` | Show team logos in bracket and game views |
+| `logo_size` | number | `132` | Logo size in pixels for game view (24–200) |
+| `show_shots` | boolean | `true` | Show shots on goal row in game view |
+| `show_next_game` | boolean | `true` | Show next game info when no game is active |
 | `show_last_updated` | boolean | `true` | Show "Updated X ago" timestamp below the header |
 | `show_events` | boolean | `true` | Show live game events (goals & penalties) in game view |
 | `events_count` | number | `10` | Number of events to display (3–25) |
@@ -173,6 +177,10 @@ Notification alerts (win, pre-game, goal) are configured in the **integration**,
 type: custom:hockey-playoff-card
 entity: sensor.nhl_playoffs_col_edm_1
 title: 2025 Stanley Cup Playoffs
+show_logo: true
+logo_size: 132
+show_shots: true
+show_next_game: true
 show_last_updated: true
 show_events: true
 events_count: 10
@@ -316,18 +324,18 @@ All elements in the `hockey-playoff-card` have stable `hp-` prefixed CSS class n
 | `.hp-round-header` | Round label row (clickable to collapse/expand) |
 | `.hp-round-chevron` | Chevron indicator on the round header |
 | `.hp-round-chevron--open` | Modifier when the round is expanded |
-| `.hp-series` | One series row |
-| `.hp-series--followed` | Modifier on rows where a followed team is playing |
+| `.hp-series` | One series matchup card |
+| `.hp-series--followed` | Modifier on series where a followed team is playing |
+| `.hp-series-team-row` | One team row within a series (logo + abbrev + name + wins) |
 | `.hp-series-logo` | Team logo `<img>` within a series row |
-| `.hp-series-logo-ph` | Placeholder shown when no logo URL is available |
-| `.hp-series-team` | Team column (logo + abbreviation + wins) |
+| `.hp-series-logo-ph` | Placeholder shown when no logo is available or the image fails |
 | `.hp-series-abbrev` | Team abbreviation |
 | `.hp-series-abbrev--winner` | Modifier on the winning team's abbreviation |
+| `.hp-series-name` | Full team name (secondary text, truncated) |
 | `.hp-series-wins` | Win count |
 | `.hp-series-wins--leader` | Modifier when this team leads the series |
 | `.hp-series-wins--loser` | Modifier on the trailing team after series is complete |
-| `.hp-series-mid` | Center column (dash/live score + status label) |
-| `.hp-series-dash` | "—" separator between win counts |
+| `.hp-series-status-row` | Status bar at the bottom of each series card |
 | `.hp-series-live-score` | In-game score shown when `game_state = LIVE` |
 | `.hp-series-status` | Series status label text |
 | `.hp-series-status--live` | Modifier when the series has a live game |
