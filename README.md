@@ -1,13 +1,19 @@
 # Hockey Tracker Card
 
-A [Home Assistant](https://www.home-assistant.io/) Lovelace card that displays live scores, schedule, and recent results for any team tracked by the Hockey Tracker integration — supporting **15 leagues** including NHL, PWHL, AHL, ECHL, CHL, OHL, WHL, QMJHL, USHL, and more.
+A [Home Assistant](https://www.home-assistant.io/) Lovelace card package that displays live scores, schedules, and playoff brackets for any team or league tracked by the Hockey Tracker integration — supporting **15 leagues** including NHL, PWHL, AHL, ECHL, CHL, OHL, WHL, QMJHL, USHL, and more.
 
-> **Requires:** [ha-hockey-tracker](https://github.com/linkian19/ha-hockey-tracker) integration (v1.4.0+) to be installed and a team sensor configured first.
+This package includes two card types:
+
+- **`hockey-tracker-card`** — Live scoreboard, game events, and recent results for a single tracked team
+- **`hockey-playoff-card`** — Full playoff bracket view with live game data for up to 4 followed teams
+
+> **Requires:** [ha-hockey-tracker](https://github.com/linkian19/ha-hockey-tracker) integration (v1.5.0+) to be installed and at least one sensor configured first.
 
 ---
 
 ## Features
 
+### Hockey Tracker Card (`hockey-tracker-card`)
 - Live scoreboard with period and game clock
 - Shots on goal (home and away)
 - State badge in top bar: `LIVE`, `PRE-GAME`, `FINAL`, `NO GAME`
@@ -22,6 +28,16 @@ A [Home Assistant](https://www.home-assistant.io/) Lovelace card that displays l
 - Optional recent game results list (W/L, score, opponent, date) — rows link to official game summaries
 - Full UI editor — no YAML required
 - Named CSS classes for styling with [card-mod](https://github.com/thomasloven/lovelace-card-mod)
+
+### Hockey Playoff Card (`hockey-playoff-card`)
+- Full playoff bracket across all rounds and series for any supported league
+- Followed teams highlighted with a colored border and tinted background
+- Live game score and period shown inline within each series row during active games
+- Series status labels (e.g. "COL leads 3–1", "Tied 2–2", "BUF wins 4–2")
+- Toggle between **bracket view** (default) and **game view** (live scoreboard, events, next game)
+- Rounds auto-collapse to focus on the current round — click any round header to expand/collapse
+- Full UI editor — no YAML required
+- `hp-` prefixed CSS classes for styling with card-mod
 
 ---
 
@@ -46,11 +62,13 @@ A [Home Assistant](https://www.home-assistant.io/) Lovelace card that displays l
 
 ---
 
-## Adding the Card
+## Adding the Cards
+
+### Hockey Tracker Card
 
 1. Edit a dashboard and click **Add Card**
 2. Search for **Hockey Tracker** (or scroll to "Custom: Hockey Tracker Card")
-3. Select your sensor entity and configure using the UI editor
+3. Select your Team Tracker sensor and configure using the UI editor
 
 Or add manually with YAML:
 
@@ -59,9 +77,22 @@ type: custom:hockey-tracker-card
 entity: sensor.kansas_city_mavericks_game
 ```
 
+### Hockey Playoff Card
+
+1. Edit a dashboard and click **Add Card**
+2. Search for **Hockey Playoff** (or scroll to "Custom: Hockey Playoff Card")
+3. Select your Playoff Tracker sensor and configure using the UI editor
+
+Or add manually with YAML:
+
+```yaml
+type: custom:hockey-playoff-card
+entity: sensor.nhl_playoffs_col_edm_1
+```
+
 ---
 
-## Card Options
+## Hockey Tracker Card Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
@@ -80,7 +111,7 @@ entity: sensor.kansas_city_mavericks_game
 | `events_count` | number | `10` | Number of events to display (3–25) |
 | `collapsible_events` | boolean | `true` | Show a collapse toggle on the Game Events section |
 
-### Example with all options
+### Example
 
 ```yaml
 type: custom:hockey-tracker-card
@@ -102,7 +133,7 @@ collapsible_events: true
 
 ---
 
-## Display Modes
+## Hockey Tracker Card — Display Modes
 
 The card automatically switches between views based on game state:
 
@@ -125,9 +156,63 @@ Notification alerts (win, pre-game, goal) are configured in the **integration**,
 
 ---
 
+## Hockey Playoff Card Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `entity` | string | **required** | The Playoff Tracker sensor entity |
+| `title` | string | sensor name | Override the card title |
+| `show_last_updated` | boolean | `true` | Show "Updated X ago" timestamp below the header |
+| `show_events` | boolean | `true` | Show live game events (goals & penalties) in game view |
+| `events_count` | number | `10` | Number of events to display (3–25) |
+| `collapsible_events` | boolean | `true` | Show a collapse toggle on the Game Events section |
+
+### Example
+
+```yaml
+type: custom:hockey-playoff-card
+entity: sensor.nhl_playoffs_col_edm_1
+title: 2025 Stanley Cup Playoffs
+show_last_updated: true
+show_events: true
+events_count: 10
+collapsible_events: true
+```
+
+---
+
+## Hockey Playoff Card — Display Modes
+
+The card has two views, toggled via buttons in the header:
+
+| View | When shown | How to activate |
+|------|------------|-----------------|
+| **Bracket** (🏒) | Full playoff bracket, all rounds | Default; always available |
+| **Game** (📺) | Live scoreboard, events, next game | Only shown when a followed team has an active game (LIVE, PRE, or recent FINAL) |
+
+### Bracket view
+
+All rounds are displayed as expandable sections. Rounds before the current active round are collapsed by default; the current round is expanded. Click any round header to toggle.
+
+Each series row shows:
+- Team logos (or abbreviation placeholder if no logo)
+- Team abbreviations with win counts
+- Series status label: `"COL leads 3–1"`, `"Tied 2–2"`, `"BUF wins 4–2"`, `"Game 1"`, etc.
+- Live game score and period inline when `game_state = LIVE`
+
+Followed teams' series are highlighted with a colored left border and tinted background.
+
+### Game view
+
+Reuses the Team Tracker card's scoreboard layout — full home/away scoreboard, period and clock, shots, game events feed, and next upcoming game. This view reflects the most relevant active game for any followed team.
+
+---
+
 ## CSS Customization (card-mod)
 
-All elements in the card have stable, prefixed CSS class names so you can target them with [card-mod](https://github.com/thomasloven/lovelace-card-mod).
+### Hockey Tracker Card class reference
+
+All elements in the `hockey-tracker-card` have stable `ht-` prefixed CSS class names so you can target them with [card-mod](https://github.com/thomasloven/lovelace-card-mod).
 
 ### Class reference
 
@@ -206,6 +291,65 @@ card_mod:
 ```
 
 > **Note:** The `hockey-tracker-card$` selector is required for card-mod to pierce the card's Shadow DOM. Add `!important` to overrides that don't apply.
+
+---
+
+### Hockey Playoff Card class reference
+
+All elements in the `hockey-playoff-card` have stable `hp-` prefixed CSS class names.
+
+| Class | Element |
+|-------|---------|
+| `.hp-content` | Root content wrapper |
+| `.hp-header` | Top bar (badge + title + view buttons) |
+| `.hp-badge` | State badge pill |
+| `.hp-badge--live` | Badge modifier — a followed team's game is in progress |
+| `.hp-badge--pre` | Badge modifier — pre-game |
+| `.hp-badge--final` | Badge modifier — game ended |
+| `.hp-badge--none` | Badge modifier — no active game |
+| `.hp-title` | Card title text |
+| `.hp-header-btns` | Container for bracket / game / refresh buttons |
+| `.hp-icon-btn` | Individual header icon button |
+| `.hp-icon-btn--active` | Modifier on the currently active view button |
+| `.hp-last-updated` | "Updated X ago" timestamp line |
+| `.hp-round` | One round container |
+| `.hp-round-header` | Round label row (clickable to collapse/expand) |
+| `.hp-round-chevron` | Chevron indicator on the round header |
+| `.hp-round-chevron--open` | Modifier when the round is expanded |
+| `.hp-series` | One series row |
+| `.hp-series--followed` | Modifier on rows where a followed team is playing |
+| `.hp-series-logo` | Team logo `<img>` within a series row |
+| `.hp-series-logo-ph` | Placeholder shown when no logo URL is available |
+| `.hp-series-team` | Team column (logo + abbreviation + wins) |
+| `.hp-series-abbrev` | Team abbreviation |
+| `.hp-series-abbrev--winner` | Modifier on the winning team's abbreviation |
+| `.hp-series-wins` | Win count |
+| `.hp-series-wins--leader` | Modifier when this team leads the series |
+| `.hp-series-wins--loser` | Modifier on the trailing team after series is complete |
+| `.hp-series-mid` | Center column (dash/live score + status label) |
+| `.hp-series-dash` | "—" separator between win counts |
+| `.hp-series-live-score` | In-game score shown when `game_state = LIVE` |
+| `.hp-series-status` | Series status label text |
+| `.hp-series-status--live` | Modifier when the series has a live game |
+| `.hp-series-status--pre` | Modifier when the series has a pre-game today |
+| `.hp-game-tabs` | Tab bar container in game view |
+| `.hp-game-tab` | Individual game tab button |
+| `.hp-game-tab--active` | Active tab modifier |
+
+### Example card-mod usage
+
+```yaml
+type: custom:hockey-playoff-card
+entity: sensor.nhl_playoffs_col_edm_1
+card_mod:
+  style:
+    hockey-playoff-card$: |
+      .hp-series--followed { border-left-color: #ff6f00; }
+      .hp-badge--live { background: #e65100; }
+      .hp-series-wins--leader { color: #ff6f00; }
+```
+
+> **Note:** Use `hockey-playoff-card$` as the selector to pierce the Shadow DOM.
 
 ---
 

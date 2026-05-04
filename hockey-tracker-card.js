@@ -891,12 +891,456 @@ class HockeyTrackerCard extends LitElement {
 
 customElements.define("hockey-tracker-card", HockeyTrackerCard);
 
+// ---------------------------------------------------------------------------
+// Playoff Tracker Card Editor
+// ---------------------------------------------------------------------------
+
+class HockeyPlayoffCardEditor extends LitElement {
+  static get properties() {
+    return { hass: {}, config: {} };
+  }
+
+  setConfig(config) {
+    this.config = {
+      show_events: false,
+      events_count: 10,
+      collapsible_events: true,
+      show_last_updated: true,
+      ...config,
+    };
+  }
+
+  static get _schema() {
+    return [
+      { name: "entity", required: true, selector: { entity: { domain: "sensor" } } },
+      { name: "title", selector: { text: {} } },
+      { name: "show_events", selector: { boolean: {} } },
+      {
+        name: "events_count",
+        default: 10,
+        selector: { number: { min: 3, max: 25, step: 1, mode: "box" } },
+      },
+      { name: "collapsible_events", selector: { boolean: {} } },
+      { name: "show_last_updated", selector: { boolean: {} } },
+    ];
+  }
+
+  render() {
+    if (!this.hass || !this.config) return html``;
+    return html`
+      <ha-form
+        .hass=${this.hass}
+        .data=${this.config}
+        .schema=${HockeyPlayoffCardEditor._schema}
+        .computeLabel=${(s) => s.name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+        @value-changed=${(e) => {
+          this.config = e.detail.value;
+          this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this.config }, bubbles: true, composed: true }));
+        }}
+      ></ha-form>
+    `;
+  }
+}
+
+customElements.define("hockey-playoff-card-editor", HockeyPlayoffCardEditor);
+
+// ---------------------------------------------------------------------------
+// Playoff Tracker Card
+// ---------------------------------------------------------------------------
+
+class HockeyPlayoffCard extends LitElement {
+  static get properties() {
+    return { hass: {}, config: {}, _view: { state: true }, _collapsedRounds: { state: true } };
+  }
+
+  static get styles() {
+    return css`
+      ha-card { overflow: hidden; }
+      .hp-content { padding: 12px 16px; }
+      .hp-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+      .hp-badge { padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #fff; background: #555; flex-shrink: 0; }
+      .hp-badge--live { background: #c62828; animation: hp-pulse 1.6s ease-in-out infinite; }
+      .hp-badge--pre  { background: #1565c0; }
+      .hp-badge--final{ background: #2e7d32; }
+      .hp-badge--none { background: #555; }
+      @keyframes hp-pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+      .hp-title { flex: 1; font-weight: 600; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .hp-header-btns { display: flex; gap: 4px; flex-shrink: 0; }
+      .hp-icon-btn { background: none; border: none; cursor: pointer; color: var(--primary-text-color); opacity: 0.6; padding: 4px; border-radius: 4px; font-size: 1.1rem; line-height: 1; }
+      .hp-icon-btn:hover { opacity: 1; background: var(--secondary-background-color); }
+      .hp-icon-btn--active { opacity: 1; color: var(--primary-color); }
+      .hp-last-updated { font-size: 0.7rem; color: var(--secondary-text-color); margin-bottom: 10px; }
+
+      /* Bracket view */
+      .hp-round { margin-bottom: 10px; }
+      .hp-round-header { display: flex; align-items: center; justify-content: space-between; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--secondary-text-color); padding: 4px 0; border-bottom: 1px solid var(--divider-color); margin-bottom: 6px; cursor: pointer; user-select: none; }
+      .hp-round-chevron { font-size: 0.8rem; transition: transform 0.2s; }
+      .hp-round-chevron--open { transform: rotate(90deg); }
+      .hp-series { display: flex; align-items: center; gap: 6px; padding: 5px 4px; border-radius: 6px; margin-bottom: 4px; transition: background 0.15s; }
+      .hp-series:hover { background: var(--secondary-background-color); }
+      .hp-series--followed { background: var(--primary-color, #03a9f4)1a; border-left: 3px solid var(--primary-color, #03a9f4); padding-left: 6px; }
+      .hp-series--followed:hover { background: var(--primary-color, #03a9f4)26; }
+      .hp-series-logo { width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
+      .hp-series-logo-ph { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; color: var(--secondary-text-color); flex-shrink: 0; }
+      .hp-series-team { display: flex; flex-direction: column; align-items: center; min-width: 36px; flex-shrink: 0; }
+      .hp-series-abbrev { font-size: 0.7rem; font-weight: 600; color: var(--primary-text-color); line-height: 1; }
+      .hp-series-abbrev--winner { font-weight: 800; color: var(--primary-color, #03a9f4); }
+      .hp-series-wins { font-size: 1.15rem; font-weight: 700; color: var(--primary-text-color); line-height: 1.1; }
+      .hp-series-wins--leader { color: var(--primary-color, #03a9f4); }
+      .hp-series-wins--loser { color: var(--secondary-text-color); }
+      .hp-series-mid { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+      .hp-series-dash { font-size: 0.85rem; color: var(--secondary-text-color); font-weight: 600; }
+      .hp-series-status { font-size: 0.65rem; text-align: center; color: var(--secondary-text-color); line-height: 1.2; }
+      .hp-series-status--live { color: #c62828; font-weight: 700; }
+      .hp-series-status--pre { color: #1565c0; }
+      .hp-series-live-score { font-size: 0.85rem; font-weight: 700; color: var(--primary-text-color); }
+
+      /* Game view (reuses ht- classes from the team card) */
+      .hp-game-tabs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+      .hp-game-tab { padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid var(--divider-color); background: none; color: var(--primary-text-color); }
+      .hp-game-tab--active { background: var(--primary-color, #03a9f4); color: #fff; border-color: var(--primary-color, #03a9f4); }
+    `;
+  }
+
+  constructor() {
+    super();
+    this._view = "bracket";
+    this._collapsedRounds = new Set();
+    this._activeTeamIdx = 0;
+  }
+
+  setConfig(config) {
+    if (!config.entity) throw new Error("entity is required");
+    this.config = {
+      show_events: false,
+      events_count: 10,
+      collapsible_events: true,
+      show_last_updated: true,
+      ...config,
+    };
+  }
+
+  static getConfigElement() {
+    return document.createElement("hockey-playoff-card-editor");
+  }
+
+  static getStubConfig() {
+    return { entity: "" };
+  }
+
+  get _stateObj() {
+    return this.hass?.states[this.config?.entity];
+  }
+
+  get _attr() {
+    return this._stateObj?.attributes || {};
+  }
+
+  _badge() {
+    const state = this._stateObj?.state || "NO_GAME";
+    const map = { LIVE: ["live", "LIVE"], PRE: ["pre", "PRE-GAME"], FINAL: ["final", "FINAL"] };
+    const [cls, label] = map[state] || ["none", "NO GAME"];
+    return html`<span class="hp-badge hp-badge--${cls}">${label}</span>`;
+  }
+
+  _title() {
+    if (this.config.title) return this.config.title;
+    const league = this._attr.league || "";
+    const teams = (this._attr.followed_teams || []).join(", ");
+    return teams ? `${league} Playoffs — ${teams}` : `${league} Playoffs`;
+  }
+
+  _hasActiveGame() {
+    const s = this._stateObj?.state;
+    return s === "LIVE" || s === "PRE" || s === "FINAL";
+  }
+
+  _timeAgo(iso) {
+    if (!iso) return "";
+    const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+    if (secs < 60) return `${secs}s ago`;
+    if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+    return `${Math.floor(secs / 3600)}h ago`;
+  }
+
+  // Bracket view rendering
+  _renderBracket() {
+    const bracket = this._attr.bracket || [];
+    const currentRound = this._attr.current_round || 0;
+
+    if (!bracket.length) {
+      return html`<div class="hp-last-updated" style="text-align:center;padding:20px 0">No playoff data available.</div>`;
+    }
+
+    // Auto-collapse completed rounds (not the current one)
+    const rounds = bracket.map((round) => {
+      const isCurrentOrFuture = round.round_number >= currentRound;
+      return html`
+        <div class="hp-round">
+          <div class="hp-round-header" @click=${() => this._toggleRound(round.round_number)}>
+            <span>${round.round_name}</span>
+            <span class="hp-round-chevron ${this._collapsedRounds.has(round.round_number) ? "" : "hp-round-chevron--open"}">▶</span>
+          </div>
+          ${this._collapsedRounds.has(round.round_number)
+            ? html``
+            : html`${round.series.map((s) => this._renderSeries(s))}`
+          }
+        </div>
+      `;
+    });
+    return html`${rounds}`;
+  }
+
+  _toggleRound(roundNum) {
+    const next = new Set(this._collapsedRounds);
+    if (next.has(roundNum)) next.delete(roundNum);
+    else next.add(roundNum);
+    this._collapsedRounds = next;
+  }
+
+  _renderSeries(s) {
+    const followed = s.team1_is_followed || s.team2_is_followed;
+    const t1wins = s.team1_wins || 0;
+    const t2wins = s.team2_wins || 0;
+    const t1leads = t1wins > t2wins;
+    const t2leads = t2wins > t1wins;
+    const complete = s.status === "complete";
+
+    const statusLabel = this._seriesStatusLabel(s);
+    const isLive = s.game_state === "LIVE";
+
+    return html`
+      <div class="hp-series ${followed ? "hp-series--followed" : ""}">
+        ${this._seriesLogo(s.team1_logo_url, s.team1_abbrev)}
+        <div class="hp-series-team">
+          <span class="hp-series-abbrev ${s.winner_id === s.team1_id ? "hp-series-abbrev--winner" : ""}">${s.team1_abbrev || "TBD"}</span>
+          <span class="hp-series-wins ${t1leads ? "hp-series-wins--leader" : (complete && !t1leads ? "hp-series-wins--loser" : "")}">${t1wins}</span>
+        </div>
+        <div class="hp-series-mid">
+          ${isLive
+            ? html`<span class="hp-series-live-score">${s.game_score || "0-0"}</span>`
+            : html`<span class="hp-series-dash">—</span>`
+          }
+          <span class="hp-series-status ${isLive ? "hp-series-status--live" : (s.game_state === "PRE" ? "hp-series-status--pre" : "")}">${statusLabel}</span>
+        </div>
+        <div class="hp-series-team">
+          <span class="hp-series-wins ${t2leads ? "hp-series-wins--leader" : (complete && !t2leads ? "hp-series-wins--loser" : "")}">${t2wins}</span>
+          <span class="hp-series-abbrev ${s.winner_id === s.team2_id ? "hp-series-abbrev--winner" : ""}">${s.team2_abbrev || "TBD"}</span>
+        </div>
+        ${this._seriesLogo(s.team2_logo_url, s.team2_abbrev)}
+      </div>
+    `;
+  }
+
+  _seriesLogo(url, abbrev) {
+    if (url) return html`<img class="hp-series-logo" src="${url}" alt="${abbrev}" onerror="this.style.display='none'">`;
+    return html`<div class="hp-series-logo-ph">${abbrev || "?"}</div>`;
+  }
+
+  _seriesStatusLabel(s) {
+    if (s.game_state === "LIVE") {
+      const p = s.game_period ? `P${s.game_period}` : "";
+      const c = s.game_clock || "";
+      return [p, c].filter(Boolean).join(" ") || "LIVE";
+    }
+    if (s.game_state === "PRE") return "Today";
+    if (s.game_state === "FINAL") return "Final";
+    if (s.status === "complete") {
+      const w = s.team1_wins > s.team2_wins ? `${s.team1_abbrev}` : `${s.team2_abbrev}`;
+      const ws = Math.max(s.team1_wins, s.team2_wins);
+      const ls = Math.min(s.team1_wins, s.team2_wins);
+      return `${w} wins ${ws}-${ls}`;
+    }
+    if (s.status === "scheduled") return "Upcoming";
+    const t1wins = s.team1_wins || 0, t2wins = s.team2_wins || 0;
+    if (t1wins === t2wins) return `Tied ${t1wins}-${t2wins}`;
+    const leader = t1wins > t2wins ? s.team1_abbrev : s.team2_abbrev;
+    return `${leader} leads ${Math.max(t1wins,t2wins)}-${Math.min(t1wins,t2wins)}`;
+  }
+
+  // Game view rendering (reuses shared helpers from team card via inline)
+  _renderGameView() {
+    const attr = this._attr;
+    const state = this._stateObj?.state || "NO_GAME";
+    // Delegate entirely to shared rendering functions inlined here
+    return html`${this._renderGameInner(state, attr)}`;
+  }
+
+  _renderGameInner(state, attr) {
+    const isLive = state === "LIVE";
+    const isFinal = state === "FINAL";
+    const isPre = state === "PRE";
+    const isActive = isLive || isFinal;
+
+    if (state === "NO_GAME") {
+      const ng = attr.next_game;
+      if (!ng) return html`<div style="text-align:center;padding:20px 0;color:var(--secondary-text-color)">No upcoming games scheduled.</div>`;
+      return this._renderNextGame(ng, attr);
+    }
+
+    const start = attr.start_time ? new Date(attr.start_time) : null;
+    const startStr = start ? start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
+
+    const homeScore = isActive ? attr.home_score : null;
+    const awayScore = isActive ? attr.away_score : null;
+    const showShots = isActive && (attr.home_shots != null || attr.away_shots != null);
+
+    return html`
+      <div class="ht-scoreboard">
+        <div class="ht-team">
+          ${attr.away_logo_url ? html`<img class="ht-logo" src="${attr.away_logo_url}" alt="">` : html`<ha-icon class="ht-logo-icon" icon="mdi:hockey-puck"></ha-icon>`}
+          <div class="ht-team-name">${attr.away_team || ""}</div>
+          ${isActive ? html`<div class="ht-score">${awayScore ?? 0}</div>` : html`<div class="ht-score-dash">—</div>`}
+        </div>
+        <div class="ht-mid">
+          <div class="ht-at-sign">@</div>
+          ${isLive ? html`<div class="ht-period">P${attr.period ?? ""} ${attr.clock ?? ""}</div>` : ""}
+          ${isPre ? html`<div class="ht-start-time">${startStr}</div>` : ""}
+          ${isFinal ? html`<div class="ht-period">Final</div>` : ""}
+          ${showShots ? html`<div class="ht-shots">${attr.away_shots ?? 0} — ${attr.home_shots ?? 0} SOG</div>` : ""}
+        </div>
+        <div class="ht-team">
+          ${attr.home_logo_url ? html`<img class="ht-logo" src="${attr.home_logo_url}" alt="">` : html`<ha-icon class="ht-logo-icon" icon="mdi:hockey-puck"></ha-icon>`}
+          <div class="ht-team-name">${attr.home_team || ""}</div>
+          ${isActive ? html`<div class="ht-score">${homeScore ?? 0}</div>` : html`<div class="ht-score-dash">—</div>`}
+        </div>
+      </div>
+      ${attr.venue ? html`<div class="ht-venue">${attr.venue}</div>` : ""}
+      ${this._renderEvents(attr, isActive)}
+      ${!isActive && attr.next_game ? this._renderNextGame(attr.next_game, attr) : ""}
+    `;
+  }
+
+  _renderNextGame(ng, attr) {
+    if (!ng?.game_date) return html``;
+    const dt = new Date(ng.game_date);
+    const label = this._isToday(dt) ? "Today's Game" : "Next Game";
+    const timeStr = dt.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    return html`
+      <div class="ht-next-game">
+        <div class="ht-next-game-label">${label}</div>
+        <div class="ht-next-game-teams">
+          <div class="ht-next-game-team">
+            ${ng.away_logo_url ? html`<img class="ht-logo" style="width:32px;height:32px" src="${ng.away_logo_url}" alt="">` : ""}
+            <span>${ng.away_team || ""}</span>
+          </div>
+          <span class="ht-next-game-at">@</span>
+          <div class="ht-next-game-team">
+            ${ng.home_logo_url ? html`<img class="ht-logo" style="width:32px;height:32px" src="${ng.home_logo_url}" alt="">` : ""}
+            <span>${ng.home_team || ""}</span>
+          </div>
+        </div>
+        <div class="ht-next-game-time">${timeStr}</div>
+        ${ng.venue ? html`<div class="ht-next-game-venue">${ng.venue}</div>` : ""}
+      </div>
+    `;
+  }
+
+  _renderEvents(attr, isActive) {
+    if (!this.config.show_events || !isActive) return html``;
+    const events = (attr.game_events || []).slice(0, this.config.events_count || 10);
+    if (!events.length) return html``;
+    return html`
+      <div class="ht-events">
+        ${events.map((e) => html`
+          <div class="ht-event-row ${e.type === "goal" ? "ht-event-goal" : "ht-event-penalty"} ${e.is_tracked_team ? "ht-event--ours" : ""}">
+            <span class="ht-event-dot"></span>
+            <span class="ht-event-meta">P${e.period} ${e.time}</span>
+            <span class="ht-event-abbrev">${e.team_abbrev}</span>
+            <span class="ht-event-body">
+              ${e.player_name}
+              ${e.type === "goal" ? html`
+                ${e.is_power_play ? html`<span class="ht-event-tag">PP</span>` : ""}
+                ${e.is_short_handed ? html`<span class="ht-event-tag">SH</span>` : ""}
+                ${e.is_empty_net ? html`<span class="ht-event-tag">EN</span>` : ""}
+                ${e.assists?.length ? html`<span class="ht-event-assists">${e.assists.join(", ")}</span>` : ""}
+              ` : html`<span class="ht-event-assists">${e.description || ""} ${e.minutes ? `(${e.minutes} min)` : ""}</span>`}
+            </span>
+          </div>
+        `)}
+      </div>
+    `;
+  }
+
+  _isToday(dt) {
+    const now = new Date();
+    return dt.getFullYear() === now.getFullYear() && dt.getMonth() === now.getMonth() && dt.getDate() === now.getDate();
+  }
+
+  async _refresh() {
+    try {
+      await this.hass.callService("hockey_tracker", "force_refresh", { entity_id: this.config.entity });
+    } catch {
+      await this.hass.callService("homeassistant", "update_entity", { entity_id: this.config.entity });
+    }
+  }
+
+  render() {
+    if (!this.hass || !this.config?.entity) return html`<ha-card><div class="hp-content">Configure entity.</div></ha-card>`;
+    const attr = this._attr;
+    const hasActive = this._hasActiveGame();
+
+    // Auto-collapse rounds that are earlier than the current round on first render
+    if (this._collapsedRounds.size === 0 && attr.bracket?.length > 1) {
+      const current = attr.current_round || 0;
+      const collapsed = new Set();
+      for (const r of attr.bracket) {
+        if (r.round_number < current) collapsed.add(r.round_number);
+      }
+      if (collapsed.size) this._collapsedRounds = collapsed;
+    }
+
+    return html`
+      <ha-card>
+        <div class="hp-content">
+          <div class="hp-header">
+            ${this._badge()}
+            <span class="hp-title">${this._title()}</span>
+            <div class="hp-header-btns">
+              <button
+                class="hp-icon-btn ${this._view === "bracket" ? "hp-icon-btn--active" : ""}"
+                title="Bracket view"
+                @click=${() => { this._view = "bracket"; }}
+              >🏒</button>
+              ${hasActive ? html`
+                <button
+                  class="hp-icon-btn ${this._view === "game" ? "hp-icon-btn--active" : ""}"
+                  title="Game view"
+                  @click=${() => { this._view = "game"; }}
+                >📺</button>
+              ` : ""}
+              <button class="hp-icon-btn" title="Refresh" @click=${this._refresh}>↻</button>
+            </div>
+          </div>
+          ${this.config.show_last_updated
+            ? html`<div class="hp-last-updated">Updated ${this._timeAgo(attr.last_fetched)}</div>`
+            : ""}
+          ${this._view === "game" && hasActive
+            ? this._renderGameView()
+            : this._renderBracket()
+          }
+        </div>
+      </ha-card>
+    `;
+  }
+}
+
+customElements.define("hockey-playoff-card", HockeyPlayoffCard);
+
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "hockey-tracker-card",
   name: "Hockey Tracker Card",
-  description: "Live scores, schedule, and stats for ECHL, AHL, or NHL teams.",
-  version: "1.3.2",
+  description: "Live scores, schedule, and stats for any supported hockey league team.",
+  version: "1.5.0",
+  preview: false,
+  documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
+});
+window.customCards.push({
+  type: "hockey-playoff-card",
+  name: "Hockey Playoff Card",
+  description: "Playoff bracket and live game view for followed teams across any supported league.",
+  version: "1.5.0",
   preview: false,
   documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
 });
