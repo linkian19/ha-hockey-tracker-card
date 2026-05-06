@@ -1,5 +1,5 @@
 /**
- * Hockey Tracker Card v1.9.0
+ * Hockey Tracker Card v1.9.1
  * https://github.com/linkian19/ha-hockey-tracker-card
  *
  * Inspired by ha-teamtracker (https://github.com/vasqued2/ha-teamtracker) by vasqued2.
@@ -1044,12 +1044,12 @@ class HockeyPlayoffCard extends LitElement {
         /* Series detail — standings */
         .hp-standings-heading { font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--secondary-text-color); text-align: center; padding: 8px 0 4px; }
         .hp-standings-row { display: flex; align-items: baseline; justify-content: center; gap: 6px; padding: 2px 0 6px; }
-        .hp-standings-team { font-size: 0.8rem; color: var(--secondary-text-color); flex: 1; }
-        .hp-standings-team--right { text-align: right; }
+        .hp-standings-team { font-size: 0.8rem; color: var(--secondary-text-color); flex: 1; text-align: center; }
         .hp-standings-score { font-size: 1.8rem; font-weight: 700; color: var(--primary-text-color); line-height: 1; }
         .hp-standings-dash { font-size: 1.2rem; color: var(--secondary-text-color); }
         .hp-standings-leader { color: var(--primary-color, #03a9f4) !important; }
         .hp-standings-divider { border-top: 1px solid var(--divider-color); margin: 0 0 8px; }
+        .hp-series-no-game-status { text-align: center; font-size: 0.78rem; color: var(--secondary-text-color); padding: 4px 0; }
       `,
     ];
   }
@@ -1282,9 +1282,19 @@ class HockeyPlayoffCard extends LitElement {
     const attr = this._attr;
     const hid = attr.home_team_id;
     const aid = attr.away_team_id;
-    if (!hid || !aid) return false;
-    const active = new Set([String(hid), String(aid)]);
-    return active.has(String(s.team1_id)) && active.has(String(s.team2_id));
+    if (hid && aid) {
+      const idSet = new Set([String(hid), String(aid)]);
+      if (idSet.has(String(s.team1_id)) && idSet.has(String(s.team2_id))) return true;
+    }
+    // Fallback: match by abbreviation (handles HT where bracket team1_id may be
+    // the schedule's home_team code rather than the scorebar's HomeID)
+    const ha = attr.home_team_abbrev;
+    const aa = attr.away_team_abbrev;
+    if (ha && aa && s.team1_abbrev && s.team2_abbrev) {
+      const abbrSet = new Set([String(ha), String(aa)]);
+      if (abbrSet.has(String(s.team1_abbrev)) && abbrSet.has(String(s.team2_abbrev))) return true;
+    }
+    return false;
   }
 
   _renderSeriesDetail(s) {
@@ -1301,7 +1311,7 @@ class HockeyPlayoffCard extends LitElement {
         <span class="hp-standings-score ${t1wins > t2wins ? "hp-standings-leader" : ""}">${t1wins}</span>
         <span class="hp-standings-dash">–</span>
         <span class="hp-standings-score ${t2wins > t1wins ? "hp-standings-leader" : ""}">${t2wins}</span>
-        <span class="hp-standings-team hp-standings-team--right ${t2wins > t1wins ? "hp-standings-leader" : ""}">${s.team2_name || s.team2_abbrev || "TBD"}</span>
+        <span class="hp-standings-team ${t2wins > t1wins ? "hp-standings-leader" : ""}">${s.team2_name || s.team2_abbrev || "TBD"}</span>
       </div>
       <div class="hp-standings-divider"></div>
       ${this._renderSeriesGameSection(s, isActive, state, attr)}
@@ -1453,6 +1463,11 @@ class HockeyPlayoffCard extends LitElement {
           <div class="ht-next-game-time">${this._fmtGameTime(s.game_start_time)}</div>
         </div>
       `;
+    }
+    // Fallback: show the series standing as a subtle status line
+    const statusLabel = this._seriesStatusLabel(s);
+    if (statusLabel) {
+      return html`<div class="hp-series-no-game-status">${statusLabel}</div>`;
     }
     return html``;
   }
