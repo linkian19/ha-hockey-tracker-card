@@ -35,7 +35,7 @@ This package includes two card types:
 - Live game score and period shown inline within each series row during active games
 - Series status labels (e.g. "COL leads 3–1", "Tied 2–2", "BUF wins 4–2")
 - **"W" column header** on each series card so win counts are clearly distinct from live game scores
-- **Click any series** to drill into a series detail view — shows series wins prominently, plus live game score/events if that series is the current tracked game
+- **Click any series** to drill into a series detail view — "Series" standings heading, team names with win counts (leader highlighted), then a full game section mirroring the team tracker card
 - Bracket button (🏒) in header always returns to the full bracket
 - Rounds auto-collapse to focus on the current round — click any round header to expand/collapse
 - Full UI editor — no YAML required
@@ -219,13 +219,14 @@ Followed teams' series are highlighted with a colored left border and tinted bac
 
 Shown when you click a series card in the bracket. Displays:
 
-- **Series wins** — compact logos, team names, and win counts (leader highlighted); series status label ("COL leads 3–1", "Tied 2–2", etc.)
-- **One game section** based on the current state:
-  - **Live** — full scoreboard with score, period/clock, shots on goal, venue, and game events
-  - **Final** (game just ended) — final score of the last game + "Next: [date/time]" if a next game is scheduled
-  - **Pre-game** — "Today's Game" with matchup and start time (timezone-aware)
-  - **No active game** — next game date/time if one is scheduled
-- For series not tracked by the integration (e.g., two non-followed teams), shows inline live score/period if the game is live, or today's start time for pre-game
+- **Series standings** — "Series" heading, then team names left/right with win counts in large type (leader highlighted in primary color)
+- **Game section** — mirrors the team tracker card behavior based on the current game state:
+  - **Live** — full scoreboard with score, period/clock, shots on goal, venue, and game events (respects `show_shots` and `show_events` config)
+  - **Pre-game ≤30 min away** — scoreboard layout without scores, plus start time
+  - **Pre-game >30 min away** — "Today's Game" upcoming view with logos, matchup, and start time + venue
+  - **Final** — last game's final scoreboard + next game time (if `show_next_game` is enabled)
+  - **No game / off-season** — "Next Game" upcoming view with logos and scheduled date
+- **For non-tracked series** (two non-followed teams) — shows a compact scoreboard with logos and the live score string, or a pre-game upcoming view
 
 Click the 🏒 button in the header to return to the bracket.
 
@@ -357,15 +358,14 @@ All elements in the `hockey-playoff-card` have stable `hp-` prefixed CSS class n
 | `.hp-series-status--pre` | Modifier when the series has a pre-game today |
 | `.hp-series-wins-hdr-row` | Container row for the "W" wins column header |
 | `.hp-series-wins-hdr` | "W" label above the win count column |
-| `.hp-detail-series-row` | Compact series wins row in detail view |
-| `.hp-detail-team-col` | One team column within the series wins row |
-| `.hp-detail-mid` | "vs" separator between team columns |
-| `.hp-detail-team-name` | Team name below logo in detail view |
-| `.hp-detail-wins` | Win count in detail view |
-| `.hp-detail-wins--leader` | Modifier on the leading team's win count |
-| `.hp-detail-series-status` | Series status label below the wins row |
-| `.hp-detail-section-label` | Small header for game sub-sections ("Today's Game", "Last Game · Final") |
-| `.hp-game-scores-divider` | Horizontal rule separating series wins from game section |
+| `.hp-standings-heading` | "Series" section label above the standings row |
+| `.hp-standings-row` | Flex row containing team names and win counts |
+| `.hp-standings-team` | Team name text (left-aligned for team 1) |
+| `.hp-standings-team--right` | Modifier for team 2 name (right-aligned) |
+| `.hp-standings-score` | Large win count number |
+| `.hp-standings-dash` | "–" separator between the two win counts |
+| `.hp-standings-leader` | Modifier on the leading team's name and score (uses primary color) |
+| `.hp-standings-divider` | Horizontal rule separating standings from game section |
 
 ### Example card-mod usage
 

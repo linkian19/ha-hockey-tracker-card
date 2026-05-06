@@ -1,5 +1,5 @@
 /**
- * Hockey Tracker Card v1.8.0
+ * Hockey Tracker Card v1.9.0
  * https://github.com/linkian19/ha-hockey-tracker-card
  *
  * Inspired by ha-teamtracker (https://github.com/vasqued2/ha-teamtracker) by vasqued2.
@@ -1041,16 +1041,15 @@ class HockeyPlayoffCard extends LitElement {
         /* Series wins column header in bracket */
         .hp-series-wins-hdr-row { display: flex; justify-content: flex-end; padding: 2px 8px 0; }
         .hp-series-wins-hdr { font-size: 0.58rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--disabled-color, #9e9e9e); }
-        /* Series detail view */
-        .hp-detail-series-row { display: flex; align-items: center; gap: 8px; padding: 8px 0 4px; }
-        .hp-detail-team-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
-        .hp-detail-mid { font-size: 0.75rem; color: var(--secondary-text-color); flex-shrink: 0; }
-        .hp-detail-team-name { font-size: 0.78rem; color: var(--secondary-text-color); text-align: center; word-break: break-word; }
-        .hp-detail-wins { font-size: 1.8rem; font-weight: 700; color: var(--primary-text-color); line-height: 1; }
-        .hp-detail-wins--leader { color: var(--primary-color, #03a9f4); }
-        .hp-detail-series-status { text-align: center; font-size: 0.75rem; color: var(--secondary-text-color); margin-bottom: 6px; }
-        .hp-detail-section-label { font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--secondary-text-color); text-align: center; margin-bottom: 4px; }
-        .hp-game-scores-divider { border-top: 1px solid var(--divider-color); margin: 8px 0 6px; }
+        /* Series detail — standings */
+        .hp-standings-heading { font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--secondary-text-color); text-align: center; padding: 8px 0 4px; }
+        .hp-standings-row { display: flex; align-items: baseline; justify-content: center; gap: 6px; padding: 2px 0 6px; }
+        .hp-standings-team { font-size: 0.8rem; color: var(--secondary-text-color); flex: 1; }
+        .hp-standings-team--right { text-align: right; }
+        .hp-standings-score { font-size: 1.8rem; font-weight: 700; color: var(--primary-text-color); line-height: 1; }
+        .hp-standings-dash { font-size: 1.2rem; color: var(--secondary-text-color); }
+        .hp-standings-leader { color: var(--primary-color, #03a9f4) !important; }
+        .hp-standings-divider { border-top: 1px solid var(--divider-color); margin: 0 0 8px; }
       `,
     ];
   }
@@ -1289,139 +1288,173 @@ class HockeyPlayoffCard extends LitElement {
   }
 
   _renderSeriesDetail(s) {
-    const showLogo = this.config.show_logo !== false;
     const isActive = this._isActiveGame(s);
     const state = this._stateObj?.state || "NO_GAME";
     const attr = this._attr;
-    const t1wins = s.team1_wins || 0;
-    const t2wins = s.team2_wins || 0;
+    const t1wins = s.team1_wins ?? 0;
+    const t2wins = s.team2_wins ?? 0;
 
     return html`
-      <div class="hp-detail-series-row">
-        <div class="hp-detail-team-col">
-          ${showLogo ? this._seriesDetailLogo(s.team1_logo_url, s.team1_abbrev) : ""}
-          <div class="hp-detail-team-name">${s.team1_name || s.team1_abbrev || "TBD"}</div>
-          <div class="hp-detail-wins ${t1wins > t2wins ? "hp-detail-wins--leader" : ""}">${t1wins}</div>
-        </div>
-        <div class="hp-detail-mid">vs</div>
-        <div class="hp-detail-team-col">
-          ${showLogo ? this._seriesDetailLogo(s.team2_logo_url, s.team2_abbrev) : ""}
-          <div class="hp-detail-team-name">${s.team2_name || s.team2_abbrev || "TBD"}</div>
-          <div class="hp-detail-wins ${t2wins > t1wins ? "hp-detail-wins--leader" : ""}">${t2wins}</div>
-        </div>
+      <div class="hp-standings-heading">Series</div>
+      <div class="hp-standings-row">
+        <span class="hp-standings-team ${t1wins > t2wins ? "hp-standings-leader" : ""}">${s.team1_name || s.team1_abbrev || "TBD"}</span>
+        <span class="hp-standings-score ${t1wins > t2wins ? "hp-standings-leader" : ""}">${t1wins}</span>
+        <span class="hp-standings-dash">–</span>
+        <span class="hp-standings-score ${t2wins > t1wins ? "hp-standings-leader" : ""}">${t2wins}</span>
+        <span class="hp-standings-team hp-standings-team--right ${t2wins > t1wins ? "hp-standings-leader" : ""}">${s.team2_name || s.team2_abbrev || "TBD"}</span>
       </div>
-      <div class="hp-detail-series-status">${this._seriesStatusLabel(s)}</div>
+      <div class="hp-standings-divider"></div>
       ${this._renderSeriesGameSection(s, isActive, state, attr)}
     `;
   }
 
-  _seriesDetailLogo(url, abbrev) {
-    const size = 40;
-    if (this.config.show_logo === false) return html``;
-    if (url && !this._failedLogos.has(url)) {
-      return html`<img class="ht-logo" style="width:${size}px;height:${size}px" src="${url}" alt="${abbrev || ""}"
-        @error=${() => { this._failedLogos.add(url); this.requestUpdate(); }}>`;
-    }
-    return html`<ha-icon class="ht-logo-icon" style="--mdc-icon-size:${size}px" icon="mdi:hockey-puck"></ha-icon>`;
-  }
-
   _renderSeriesGameSection(s, isActive, state, attr) {
     if (isActive) {
-      if (state === "LIVE") return this._renderDetailLiveGame(attr);
-      if (state === "FINAL") return this._renderDetailFinalGame(attr);
-      if (state === "PRE") return this._renderDetailPreGame(attr);
-      if (this.config.show_next_game !== false && attr.next_game?.game_date) {
-        return html`
-          <div class="hp-game-scores-divider"></div>
-          <div class="hp-detail-section-label">Next Game</div>
-          <div class="ht-next-game-time">${this._fmtSeriesDateTime(attr.next_game.game_date)}</div>
-        `;
-      }
-      return html``;
+      const mode = this._seriesDisplayMode(state, attr);
+      return mode === "game"
+        ? this._renderSeriesGameView(state, attr)
+        : this._renderSeriesUpcomingView(state, attr);
     }
-    // Non-active: only inline data from series object
-    if (s.game_state === "LIVE" && s.game_score) {
-      const parts = [s.game_score, s.game_period ? `P${s.game_period}` : "", s.game_clock || ""].filter(Boolean);
-      return html`
-        <div class="hp-game-scores-divider"></div>
-        <div class="hp-detail-section-label">Live</div>
-        <div class="ht-period" style="color:#c62828;text-align:center">🔴 ${parts.join(" · ")}</div>
-      `;
-    }
-    if (s.game_state === "PRE" && s.game_start_time) {
-      return html`
-        <div class="hp-game-scores-divider"></div>
-        <div class="hp-detail-section-label">Today's Game</div>
-        <div class="ht-next-game-time">${this._fmtSeriesDateTime(s.game_start_time)}</div>
-      `;
-    }
-    return html``;
+    return this._renderSeriesNonActiveGame(s);
   }
 
-  _renderDetailLiveGame(attr) {
+  _seriesDisplayMode(state, attr) {
+    if (state === "LIVE" || state === "FINAL") return "game";
+    if (state === "PRE" && attr.start_time) {
+      const minsUntil = (new Date(attr.start_time) - Date.now()) / 60000;
+      return minsUntil <= 30 ? "game" : "upcoming";
+    }
+    return "upcoming";
+  }
+
+  _renderSeriesGameView(state, attr) {
+    const showScores = state !== "PRE";
+    const logoSize = this.config.logo_size ?? 64;
     const showShots = this.config.show_shots !== false &&
       (attr.home_shots != null || attr.away_shots != null);
-    const logoSize = this.config.logo_size ?? 64;
+
     return html`
-      <div class="hp-game-scores-divider"></div>
       <div class="ht-scoreboard" style="border-top:none">
         <div class="ht-team">
           ${this._gameLogo(attr.away_logo_url, logoSize)}
-          <div class="ht-team-name">${attr.away_team || ""}</div>
-          <div class="ht-score">${attr.away_score ?? 0}</div>
+          <div class="ht-team-name">${attr.away_team ?? "Away"}</div>
+          ${showScores
+            ? html`<div class="ht-score">${attr.away_score ?? "—"}</div>`
+            : html`<div class="ht-score-dash">—</div>`}
         </div>
         <div class="ht-mid"><span class="ht-at-sign">@</span></div>
         <div class="ht-team">
           ${this._gameLogo(attr.home_logo_url, logoSize)}
-          <div class="ht-team-name">${attr.home_team || ""}</div>
-          <div class="ht-score">${attr.home_score ?? 0}</div>
+          <div class="ht-team-name">${attr.home_team ?? "Home"}</div>
+          ${showScores
+            ? html`<div class="ht-score">${attr.home_score ?? "—"}</div>`
+            : html`<div class="ht-score-dash">—</div>`}
         </div>
       </div>
-      ${attr.period || attr.clock ? html`
-        <div class="ht-period">${attr.period ? (attr.period <= 3 ? `Period ${attr.period}` : attr.period === 4 ? "OT" : `OT${attr.period - 3}`) : ""}${attr.clock ? ` · ${attr.clock}` : ""}</div>
+      ${state === "PRE" ? html`
+        <div class="ht-start-time">${this._fmtGameTime(attr.start_time)}</div>
       ` : ""}
-      ${showShots ? html`
-        <div class="ht-shots"><span>${attr.away_shots ?? "—"}</span><span>Shots on Goal</span><span>${attr.home_shots ?? "—"}</span></div>
+      ${state === "LIVE" && (attr.period || attr.clock) ? html`
+        <div class="ht-period">
+          ${attr.period ? this._periodLabel(attr.period) : ""}${attr.clock ? ` · ${attr.clock}` : ""}
+        </div>
+      ` : ""}
+      ${state === "FINAL" ? html`<div class="ht-period">Final</div>` : ""}
+      ${showScores && showShots ? html`
+        <div class="ht-shots">
+          <span>${attr.away_shots ?? "—"}</span>
+          <span>Shots on Goal</span>
+          <span>${attr.home_shots ?? "—"}</span>
+        </div>
       ` : ""}
       ${attr.venue ? html`<div class="ht-venue">${attr.venue}</div>` : ""}
       ${this._renderPlayoffEvents(attr, true)}
     `;
   }
 
-  _renderDetailFinalGame(attr) {
+  _renderSeriesUpcomingView(state, attr) {
+    if (state === "PRE") {
+      const label = this._isToday(attr.start_time) ? "Today's Game" : "Next Game";
+      return html`
+        <div class="ht-next-game">
+          <div class="ht-next-game-label">${label}</div>
+          ${this._upcomingTeams(attr.away_logo_url, attr.away_team, attr.home_logo_url, attr.home_team)}
+          <div class="ht-next-game-time">${this._fmtGameTime(attr.start_time)}</div>
+          ${attr.venue ? html`<div class="ht-next-game-venue">${attr.venue}</div>` : ""}
+        </div>
+      `;
+    }
+    if (!this.config.show_next_game) return html``;
     const ng = attr.next_game;
+    if (!ng?.game_date) return html``;
     return html`
-      <div class="hp-game-scores-divider"></div>
-      <div class="hp-detail-section-label">Last Game · Final</div>
-      <div class="ht-scoreboard" style="border-top:none">
-        <div class="ht-team">
-          ${this._gameLogo(attr.away_logo_url, 40)}
-          <div class="ht-team-name">${attr.away_team || ""}</div>
-          <div class="ht-score">${attr.away_score ?? 0}</div>
-        </div>
-        <div class="ht-mid"><span class="ht-at-sign">@</span></div>
-        <div class="ht-team">
-          ${this._gameLogo(attr.home_logo_url, 40)}
-          <div class="ht-team-name">${attr.home_team || ""}</div>
-          <div class="ht-score">${attr.home_score ?? 0}</div>
-        </div>
+      <div class="ht-next-game">
+        <div class="ht-next-game-label">Next Game</div>
+        ${this._upcomingTeams(ng.away_logo_url, ng.away_team, ng.home_logo_url, ng.home_team)}
+        <div class="ht-next-game-time">${this._fmtGameTime(ng.game_date)}</div>
+        ${ng.venue ? html`<div class="ht-next-game-venue">${ng.venue}</div>` : ""}
       </div>
-      ${this.config.show_next_game !== false && ng?.game_date ? html`
-        <div class="ht-next-game-time" style="margin-top:4px">Next: ${this._fmtSeriesDateTime(ng.game_date)}</div>
-      ` : ""}
     `;
   }
 
-  _renderDetailPreGame(attr) {
-    return html`
-      <div class="hp-game-scores-divider"></div>
-      <div class="hp-detail-section-label">Today's Game</div>
-      <div style="text-align:center;font-size:0.82rem;color:var(--secondary-text-color);margin:2px 0">
-        ${attr.away_team || ""} @ ${attr.home_team || ""}
-      </div>
-      ${attr.start_time ? html`<div class="ht-next-game-time">${this._fmtSeriesDateTime(attr.start_time)}</div>` : ""}
-      ${attr.venue ? html`<div class="ht-venue">${attr.venue}</div>` : ""}
-    `;
+  _renderSeriesNonActiveGame(s) {
+    const logoSize = this.config.logo_size ?? 64;
+
+    if (s.game_state === "LIVE" && s.game_score) {
+      const period = s.game_period ? this._periodLabel(s.game_period) : "";
+      const clock = s.game_clock || "";
+      const periodInfo = [period, clock].filter(Boolean).join(" · ");
+      return html`
+        <div class="ht-scoreboard" style="border-top:none">
+          <div class="ht-team">
+            ${this._gameLogo(s.team1_logo_url, logoSize)}
+            <div class="ht-team-name">${s.team1_name || s.team1_abbrev || "TBD"}</div>
+          </div>
+          <div class="ht-mid">
+            <div style="text-align:center">
+              <div style="color:#c62828;font-size:0.65rem;font-weight:700;letter-spacing:0.05em">🔴 LIVE</div>
+              <div class="ht-score" style="font-size:1.5rem">${s.game_score}</div>
+              ${periodInfo ? html`<div class="ht-period" style="margin-top:2px">${periodInfo}</div>` : ""}
+            </div>
+          </div>
+          <div class="ht-team">
+            ${this._gameLogo(s.team2_logo_url, logoSize)}
+            <div class="ht-team-name">${s.team2_name || s.team2_abbrev || "TBD"}</div>
+          </div>
+        </div>
+      `;
+    }
+    if (s.game_state === "FINAL" && s.game_score) {
+      return html`
+        <div class="ht-scoreboard" style="border-top:none">
+          <div class="ht-team">
+            ${this._gameLogo(s.team1_logo_url, logoSize)}
+            <div class="ht-team-name">${s.team1_name || s.team1_abbrev || "TBD"}</div>
+          </div>
+          <div class="ht-mid">
+            <div style="text-align:center">
+              <div class="ht-score" style="font-size:1.5rem">${s.game_score}</div>
+              <div class="ht-period">Final</div>
+            </div>
+          </div>
+          <div class="ht-team">
+            ${this._gameLogo(s.team2_logo_url, logoSize)}
+            <div class="ht-team-name">${s.team2_name || s.team2_abbrev || "TBD"}</div>
+          </div>
+        </div>
+      `;
+    }
+    if (s.game_state === "PRE" && s.game_start_time) {
+      const label = this._isToday(s.game_start_time) ? "Today's Game" : "Next Game";
+      return html`
+        <div class="ht-next-game">
+          <div class="ht-next-game-label">${label}</div>
+          ${this._upcomingTeams(s.team1_logo_url, s.team1_name || s.team1_abbrev, s.team2_logo_url, s.team2_name || s.team2_abbrev)}
+          <div class="ht-next-game-time">${this._fmtGameTime(s.game_start_time)}</div>
+        </div>
+      `;
+    }
+    return html``;
   }
 
   _gameLogo(url, size) {
