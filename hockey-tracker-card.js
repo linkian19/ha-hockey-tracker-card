@@ -1,5 +1,5 @@
 /**
- * Hockey Tracker Card v1.7.0
+ * Hockey Tracker Card v1.8.0
  * https://github.com/linkian19/ha-hockey-tracker-card
  *
  * Inspired by ha-teamtracker (https://github.com/vasqued2/ha-teamtracker) by vasqued2.
@@ -1042,10 +1042,15 @@ class HockeyPlayoffCard extends LitElement {
         .hp-series-wins-hdr-row { display: flex; justify-content: flex-end; padding: 2px 8px 0; }
         .hp-series-wins-hdr { font-size: 0.58rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--disabled-color, #9e9e9e); }
         /* Series detail view */
-        .hp-detail-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--secondary-text-color); margin-bottom: 4px; text-align: center; }
-        .hp-detail-wins { font-size: 2.4rem; font-weight: 700; color: var(--primary-text-color); line-height: 1; }
+        .hp-detail-series-row { display: flex; align-items: center; gap: 8px; padding: 8px 0 4px; }
+        .hp-detail-team-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
+        .hp-detail-mid { font-size: 0.75rem; color: var(--secondary-text-color); flex-shrink: 0; }
+        .hp-detail-team-name { font-size: 0.78rem; color: var(--secondary-text-color); text-align: center; word-break: break-word; }
+        .hp-detail-wins { font-size: 1.8rem; font-weight: 700; color: var(--primary-text-color); line-height: 1; }
         .hp-detail-wins--leader { color: var(--primary-color, #03a9f4); }
-        .hp-game-scores-divider { border-top: 1px solid var(--divider-color); margin: 10px 0 8px; }
+        .hp-detail-series-status { text-align: center; font-size: 0.75rem; color: var(--secondary-text-color); margin-bottom: 6px; }
+        .hp-detail-section-label { font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--secondary-text-color); text-align: center; margin-bottom: 4px; }
+        .hp-game-scores-divider { border-top: 1px solid var(--divider-color); margin: 8px 0 6px; }
       `,
     ];
   }
@@ -1217,14 +1222,46 @@ class HockeyPlayoffCard extends LitElement {
       >`;
   }
 
+  _fmtSeriesTime(iso) {
+    if (!iso) return "";
+    try {
+      const tz = this.hass?.config?.time_zone ?? undefined;
+      return new Date(iso).toLocaleTimeString(undefined, {
+        timeZone: tz,
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short",
+      });
+    } catch { return ""; }
+  }
+
+  _fmtSeriesDateTime(iso) {
+    if (!iso) return "";
+    try {
+      const tz = this.hass?.config?.time_zone ?? undefined;
+      return new Date(iso).toLocaleString(undefined, {
+        timeZone: tz,
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short",
+      });
+    } catch { return iso; }
+  }
+
   _seriesStatusLabel(s) {
     if (s.game_state === "LIVE") {
       const p = s.game_period ? `P${s.game_period}` : "";
       const c = s.game_clock || "";
       return [p, c].filter(Boolean).join(" ") || "LIVE";
     }
-    if (s.game_state === "PRE") return "Today";
-    if (s.game_state === "FINAL") return "Final";
+    if (s.game_state === "PRE") {
+      const t = s.game_start_time ? ` · ${this._fmtSeriesTime(s.game_start_time)}` : "";
+      return `Today${t}`;
+    }
+    // game_state === "FINAL" means today's game just ended — show series standing, not "Final"
     if (s.status === "complete") {
       const w = s.team1_wins > s.team2_wins ? s.team1_abbrev : s.team2_abbrev;
       const ws = Math.max(s.team1_wins, s.team2_wins);
@@ -1260,37 +1297,26 @@ class HockeyPlayoffCard extends LitElement {
     const t2wins = s.team2_wins || 0;
 
     return html`
-      <div class="hp-detail-label">Series Wins</div>
-      <div class="ht-scoreboard" style="border-bottom:none;margin-bottom:4px">
-        <div class="ht-team">
+      <div class="hp-detail-series-row">
+        <div class="hp-detail-team-col">
           ${showLogo ? this._seriesDetailLogo(s.team1_logo_url, s.team1_abbrev) : ""}
-          <div class="ht-team-name">${s.team1_name || s.team1_abbrev || "TBD"}</div>
+          <div class="hp-detail-team-name">${s.team1_name || s.team1_abbrev || "TBD"}</div>
           <div class="hp-detail-wins ${t1wins > t2wins ? "hp-detail-wins--leader" : ""}">${t1wins}</div>
         </div>
-        <div class="ht-mid">
-          <span class="ht-at-sign" style="font-size:0.8rem;font-weight:400">vs</span>
-        </div>
-        <div class="ht-team">
+        <div class="hp-detail-mid">vs</div>
+        <div class="hp-detail-team-col">
           ${showLogo ? this._seriesDetailLogo(s.team2_logo_url, s.team2_abbrev) : ""}
-          <div class="ht-team-name">${s.team2_name || s.team2_abbrev || "TBD"}</div>
+          <div class="hp-detail-team-name">${s.team2_name || s.team2_abbrev || "TBD"}</div>
           <div class="hp-detail-wins ${t2wins > t1wins ? "hp-detail-wins--leader" : ""}">${t2wins}</div>
         </div>
       </div>
-      <div class="ht-period" style="margin-bottom:6px">${this._seriesStatusLabel(s)}</div>
-
-      ${isActive && (state === "LIVE" || state === "FINAL" || state === "PRE")
-        ? this._renderActiveGameForDetail(state, attr)
-        : s.game_state === "LIVE"
-        ? this._renderInlineGame(s)
-        : ""}
-
-      ${this.config.show_next_game !== false && isActive && attr.next_game
-        ? this._renderNextGame(attr.next_game) : ""}
+      <div class="hp-detail-series-status">${this._seriesStatusLabel(s)}</div>
+      ${this._renderSeriesGameSection(s, isActive, state, attr)}
     `;
   }
 
   _seriesDetailLogo(url, abbrev) {
-    const size = 56;
+    const size = 40;
     if (this.config.show_logo === false) return html``;
     if (url && !this._failedLogos.has(url)) {
       return html`<img class="ht-logo" style="width:${size}px;height:${size}px" src="${url}" alt="${abbrev || ""}"
@@ -1299,51 +1325,102 @@ class HockeyPlayoffCard extends LitElement {
     return html`<ha-icon class="ht-logo-icon" style="--mdc-icon-size:${size}px" icon="mdi:hockey-puck"></ha-icon>`;
   }
 
-  _renderActiveGameForDetail(state, attr) {
-    const isLive = state === "LIVE";
-    const isFinal = state === "FINAL";
-    const isPre = state === "PRE";
-    const isActive = isLive || isFinal;
-    const showShots = this.config.show_shots !== false && isActive &&
-      (attr.home_shots != null || attr.away_shots != null);
+  _renderSeriesGameSection(s, isActive, state, attr) {
+    if (isActive) {
+      if (state === "LIVE") return this._renderDetailLiveGame(attr);
+      if (state === "FINAL") return this._renderDetailFinalGame(attr);
+      if (state === "PRE") return this._renderDetailPreGame(attr);
+      if (this.config.show_next_game !== false && attr.next_game?.game_date) {
+        return html`
+          <div class="hp-game-scores-divider"></div>
+          <div class="hp-detail-section-label">Next Game</div>
+          <div class="ht-next-game-time">${this._fmtSeriesDateTime(attr.next_game.game_date)}</div>
+        `;
+      }
+      return html``;
+    }
+    // Non-active: only inline data from series object
+    if (s.game_state === "LIVE" && s.game_score) {
+      const parts = [s.game_score, s.game_period ? `P${s.game_period}` : "", s.game_clock || ""].filter(Boolean);
+      return html`
+        <div class="hp-game-scores-divider"></div>
+        <div class="hp-detail-section-label">Live</div>
+        <div class="ht-period" style="color:#c62828;text-align:center">🔴 ${parts.join(" · ")}</div>
+      `;
+    }
+    if (s.game_state === "PRE" && s.game_start_time) {
+      return html`
+        <div class="hp-game-scores-divider"></div>
+        <div class="hp-detail-section-label">Today's Game</div>
+        <div class="ht-next-game-time">${this._fmtSeriesDateTime(s.game_start_time)}</div>
+      `;
+    }
+    return html``;
+  }
 
+  _renderDetailLiveGame(attr) {
+    const showShots = this.config.show_shots !== false &&
+      (attr.home_shots != null || attr.away_shots != null);
+    const logoSize = this.config.logo_size ?? 64;
     return html`
       <div class="hp-game-scores-divider"></div>
-      <div class="hp-detail-label">Game Score</div>
       <div class="ht-scoreboard" style="border-top:none">
         <div class="ht-team">
+          ${this._gameLogo(attr.away_logo_url, logoSize)}
           <div class="ht-team-name">${attr.away_team || ""}</div>
-          ${isActive ? html`<div class="ht-score">${attr.away_score ?? 0}</div>` : html`<div class="ht-score-dash">—</div>`}
+          <div class="ht-score">${attr.away_score ?? 0}</div>
         </div>
         <div class="ht-mid"><span class="ht-at-sign">@</span></div>
         <div class="ht-team">
+          ${this._gameLogo(attr.home_logo_url, logoSize)}
           <div class="ht-team-name">${attr.home_team || ""}</div>
-          ${isActive ? html`<div class="ht-score">${attr.home_score ?? 0}</div>` : html`<div class="ht-score-dash">—</div>`}
+          <div class="ht-score">${attr.home_score ?? 0}</div>
         </div>
       </div>
-      ${isPre && attr.start_time ? html`<div class="ht-start-time">${new Date(attr.start_time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</div>` : ""}
-      ${isLive && (attr.period || attr.clock) ? html`
+      ${attr.period || attr.clock ? html`
         <div class="ht-period">${attr.period ? (attr.period <= 3 ? `Period ${attr.period}` : attr.period === 4 ? "OT" : `OT${attr.period - 3}`) : ""}${attr.clock ? ` · ${attr.clock}` : ""}</div>
       ` : ""}
-      ${isFinal ? html`<div class="ht-period">Final</div>` : ""}
       ${showShots ? html`
-        <div class="ht-shots">
-          <span>${attr.away_shots ?? "—"}</span>
-          <span>Shots on Goal</span>
-          <span>${attr.home_shots ?? "—"}</span>
-        </div>
+        <div class="ht-shots"><span>${attr.away_shots ?? "—"}</span><span>Shots on Goal</span><span>${attr.home_shots ?? "—"}</span></div>
       ` : ""}
       ${attr.venue ? html`<div class="ht-venue">${attr.venue}</div>` : ""}
-      ${this._renderPlayoffEvents(attr, isActive)}
+      ${this._renderPlayoffEvents(attr, true)}
     `;
   }
 
-  _renderInlineGame(s) {
-    const parts = [s.game_score || "", s.game_period ? `P${s.game_period}` : "", s.game_clock || ""].filter(Boolean);
+  _renderDetailFinalGame(attr) {
+    const ng = attr.next_game;
     return html`
       <div class="hp-game-scores-divider"></div>
-      <div class="hp-detail-label">Live Game</div>
-      <div class="ht-period" style="color:#c62828">🔴 ${parts.join(" · ")}</div>
+      <div class="hp-detail-section-label">Last Game · Final</div>
+      <div class="ht-scoreboard" style="border-top:none">
+        <div class="ht-team">
+          ${this._gameLogo(attr.away_logo_url, 40)}
+          <div class="ht-team-name">${attr.away_team || ""}</div>
+          <div class="ht-score">${attr.away_score ?? 0}</div>
+        </div>
+        <div class="ht-mid"><span class="ht-at-sign">@</span></div>
+        <div class="ht-team">
+          ${this._gameLogo(attr.home_logo_url, 40)}
+          <div class="ht-team-name">${attr.home_team || ""}</div>
+          <div class="ht-score">${attr.home_score ?? 0}</div>
+        </div>
+      </div>
+      ${this.config.show_next_game !== false && ng?.game_date ? html`
+        <div class="ht-next-game-time" style="margin-top:4px">Next: ${this._fmtSeriesDateTime(ng.game_date)}</div>
+      ` : ""}
+    `;
+  }
+
+  _renderDetailPreGame(attr) {
+    return html`
+      <div class="hp-game-scores-divider"></div>
+      <div class="hp-detail-section-label">Today's Game</div>
+      <div style="text-align:center;font-size:0.82rem;color:var(--secondary-text-color);margin:2px 0">
+        ${attr.away_team || ""} @ ${attr.home_team || ""}
+      </div>
+      ${attr.start_time ? html`<div class="ht-next-game-time">${this._fmtSeriesDateTime(attr.start_time)}</div>` : ""}
+      ${attr.venue ? html`<div class="ht-venue">${attr.venue}</div>` : ""}
     `;
   }
 
@@ -1353,33 +1430,6 @@ class HockeyPlayoffCard extends LitElement {
       return html`<img class="ht-logo" style="width:${size}px;height:${size}px" src="${url}" alt="" @error=${(e) => { e.target.style.display = "none"; }}>`;
     }
     return html`<ha-icon class="ht-logo-icon" style="--mdc-icon-size:${size}px" icon="mdi:hockey-puck"></ha-icon>`;
-  }
-
-  _renderNextGame(ng) {
-    if (!ng?.game_date) return html``;
-    const dt = new Date(ng.game_date);
-    const now = new Date();
-    const isToday = dt.getFullYear() === now.getFullYear() && dt.getMonth() === now.getMonth() && dt.getDate() === now.getDate();
-    const label = isToday ? "Today's Game" : "Next Game";
-    const timeStr = dt.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-    return html`
-      <div class="ht-next-game">
-        <div class="ht-next-game-label">${label}</div>
-        <div class="ht-next-game-teams">
-          <div class="ht-next-game-team">
-            ${this._gameLogo(ng.away_logo_url, 40)}
-            <span>${ng.away_team || ""}</span>
-          </div>
-          <span class="ht-next-game-at">@</span>
-          <div class="ht-next-game-team">
-            ${this._gameLogo(ng.home_logo_url, 40)}
-            <span>${ng.home_team || ""}</span>
-          </div>
-        </div>
-        <div class="ht-next-game-time">${timeStr}</div>
-        ${ng.venue ? html`<div class="ht-next-game-venue">${ng.venue}</div>` : ""}
-      </div>
-    `;
   }
 
   _renderPlayoffEvents(attr, isActive) {
@@ -1474,7 +1524,7 @@ window.customCards.push({
   type: "hockey-tracker-card",
   name: "Hockey Tracker Card",
   description: "Live scores, schedule, and stats for any supported hockey league team.",
-  version: "1.7.0",
+  version: "1.8.0",
   preview: false,
   documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
 });
@@ -1482,7 +1532,7 @@ window.customCards.push({
   type: "hockey-playoff-card",
   name: "Hockey Playoff Card",
   description: "Playoff bracket and live game view for followed teams across any supported league.",
-  version: "1.7.0",
+  version: "1.8.0",
   preview: false,
   documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
 });

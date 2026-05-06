@@ -218,11 +218,14 @@ Followed teams' series are highlighted with a colored left border and tinted bac
 ### Series detail view
 
 Shown when you click a series card in the bracket. Displays:
-- **Series Wins** section — large win counts for each team with logos
-- Series status label (e.g. "COL leads 3–1")
-- If the series has a live game tracked by the integration: a **Game Score** section with the current score, period/clock, shots on goal, venue, and game events
-- If the series is live but not the tracked game: inline score and period from the bracket data
-- Next upcoming game for the series (if `show_next_game` is enabled)
+
+- **Series wins** — compact logos, team names, and win counts (leader highlighted); series status label ("COL leads 3–1", "Tied 2–2", etc.)
+- **One game section** based on the current state:
+  - **Live** — full scoreboard with score, period/clock, shots on goal, venue, and game events
+  - **Final** (game just ended) — final score of the last game + "Next: [date/time]" if a next game is scheduled
+  - **Pre-game** — "Today's Game" with matchup and start time (timezone-aware)
+  - **No active game** — next game date/time if one is scheduled
+- For series not tracked by the integration (e.g., two non-followed teams), shows inline live score/period if the game is live, or today's start time for pre-game
 
 Click the 🏒 button in the header to return to the bracket.
 
@@ -354,10 +357,15 @@ All elements in the `hockey-playoff-card` have stable `hp-` prefixed CSS class n
 | `.hp-series-status--pre` | Modifier when the series has a pre-game today |
 | `.hp-series-wins-hdr-row` | Container row for the "W" wins column header |
 | `.hp-series-wins-hdr` | "W" label above the win count column |
-| `.hp-detail-label` | Section label in series detail view ("Series Wins", "Game Score") |
-| `.hp-detail-wins` | Large win count in series detail view |
+| `.hp-detail-series-row` | Compact series wins row in detail view |
+| `.hp-detail-team-col` | One team column within the series wins row |
+| `.hp-detail-mid` | "vs" separator between team columns |
+| `.hp-detail-team-name` | Team name below logo in detail view |
+| `.hp-detail-wins` | Win count in detail view |
 | `.hp-detail-wins--leader` | Modifier on the leading team's win count |
-| `.hp-game-scores-divider` | Divider between series wins and game score sections |
+| `.hp-detail-series-status` | Series status label below the wins row |
+| `.hp-detail-section-label` | Small header for game sub-sections ("Today's Game", "Last Game · Final") |
+| `.hp-game-scores-divider` | Horizontal rule separating series wins from game section |
 
 ### Example card-mod usage
 
