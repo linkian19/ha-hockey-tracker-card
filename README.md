@@ -34,7 +34,9 @@ This package includes two card types:
 - Followed teams highlighted with a colored border and tinted background
 - Live game score and period shown inline within each series row during active games
 - Series status labels (e.g. "COL leads 3–1", "Tied 2–2", "BUF wins 4–2")
-- Toggle between **bracket view** (default) and **game view** (live scoreboard, events, next game)
+- **"W" column header** on each series card so win counts are clearly distinct from live game scores
+- **Click any series** to drill into a series detail view — shows series wins prominently, plus live game score/events if that series is the current tracked game
+- Bracket button (🏒) in header always returns to the full bracket
 - Rounds auto-collapse to focus on the current round — click any round header to expand/collapse
 - Full UI editor — no YAML required
 - `hp-` prefixed CSS classes for styling with card-mod
@@ -202,7 +204,8 @@ The card has two views, toggled via buttons in the header:
 
 All rounds are displayed as expandable sections. Rounds before the current active round are collapsed by default; the current round is expanded. Click any round header to toggle.
 
-Each series row shows:
+Each series card shows:
+- A small **W** column header labeling the win count column (so it's never confused with a live score)
 - Team logos (or abbreviation placeholder if no logo)
 - Team abbreviations with win counts
 - Series status label: `"COL leads 3–1"`, `"Tied 2–2"`, `"BUF wins 4–2"`, `"Game 1"`, etc.
@@ -210,9 +213,18 @@ Each series row shows:
 
 Followed teams' series are highlighted with a colored left border and tinted background.
 
-### Game view
+**Click any series card** to open the series detail view for that matchup.
 
-Reuses the Team Tracker card's scoreboard layout — full home/away scoreboard, period and clock, shots, game events feed, and next upcoming game. This view reflects the most relevant active game for any followed team.
+### Series detail view
+
+Shown when you click a series card in the bracket. Displays:
+- **Series Wins** section — large win counts for each team with logos
+- Series status label (e.g. "COL leads 3–1")
+- If the series has a live game tracked by the integration: a **Game Score** section with the current score, period/clock, shots on goal, venue, and game events
+- If the series is live but not the tracked game: inline score and period from the bracket data
+- Next upcoming game for the series (if `show_next_game` is enabled)
+
+Click the 🏒 button in the header to return to the bracket.
 
 ---
 
@@ -340,9 +352,12 @@ All elements in the `hockey-playoff-card` have stable `hp-` prefixed CSS class n
 | `.hp-series-status` | Series status label text |
 | `.hp-series-status--live` | Modifier when the series has a live game |
 | `.hp-series-status--pre` | Modifier when the series has a pre-game today |
-| `.hp-game-tabs` | Tab bar container in game view |
-| `.hp-game-tab` | Individual game tab button |
-| `.hp-game-tab--active` | Active tab modifier |
+| `.hp-series-wins-hdr-row` | Container row for the "W" wins column header |
+| `.hp-series-wins-hdr` | "W" label above the win count column |
+| `.hp-detail-label` | Section label in series detail view ("Series Wins", "Game Score") |
+| `.hp-detail-wins` | Large win count in series detail view |
+| `.hp-detail-wins--leader` | Modifier on the leading team's win count |
+| `.hp-game-scores-divider` | Divider between series wins and game score sections |
 
 ### Example card-mod usage
 
