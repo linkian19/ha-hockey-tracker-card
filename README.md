@@ -226,7 +226,7 @@ Shown when you click a series card in the bracket. Displays:
   - **Pre-game >30 min away** — "Today's Game" upcoming view with logos, matchup, and start time + venue
   - **Final** — last game's final scoreboard + next game time (if `show_next_game` is enabled)
   - **No game / off-season** — "Next Game" upcoming view with logos and scheduled date
-- **For non-tracked series** (two non-followed teams) — shows a compact scoreboard with logos and the live score string, or a pre-game upcoming view
+- **For non-tracked series** (two non-followed teams) — shows a compact scoreboard with logos and the live score string, a pre-game upcoming view, or the series status label
 
 Click the 🏒 button in the header to return to the bracket.
 

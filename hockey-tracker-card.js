@@ -1,5 +1,5 @@
 /**
- * Hockey Tracker Card v1.9.1
+ * Hockey Tracker Card v1.9.2
  * https://github.com/linkian19/ha-hockey-tracker-card
  *
  * Inspired by ha-teamtracker (https://github.com/vasqued2/ha-teamtracker) by vasqued2.
@@ -1043,7 +1043,7 @@ class HockeyPlayoffCard extends LitElement {
         .hp-series-wins-hdr { font-size: 0.58rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--disabled-color, #9e9e9e); }
         /* Series detail — standings */
         .hp-standings-heading { font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--secondary-text-color); text-align: center; padding: 8px 0 4px; }
-        .hp-standings-row { display: flex; align-items: baseline; justify-content: center; gap: 6px; padding: 2px 0 6px; }
+        .hp-standings-row { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 2px 0 6px; }
         .hp-standings-team { font-size: 0.8rem; color: var(--secondary-text-color); flex: 1; text-align: center; }
         .hp-standings-score { font-size: 1.8rem; font-weight: 700; color: var(--primary-text-color); line-height: 1; }
         .hp-standings-dash { font-size: 1.2rem; color: var(--secondary-text-color); }
@@ -1089,8 +1089,10 @@ class HockeyPlayoffCard extends LitElement {
 
   updated(changedProps) {
     super.updated(changedProps);
-    // One-time auto-collapse of rounds before the current active round
-    if (!this._autoCollapseDone) {
+    // One-time auto-collapse of rounds before the current active round.
+    // Guard: only run while in bracket view so a pending collapse never
+    // interferes with a just-triggered series detail render.
+    if (!this._autoCollapseDone && this._view === "bracket") {
       const bracket = this._attr.bracket || [];
       if (bracket.length > 0) {
         this._autoCollapseDone = true;
@@ -1179,7 +1181,7 @@ class HockeyPlayoffCard extends LitElement {
     return html`
       <div class="hp-series ${followed ? "hp-series--followed" : ""}"
            style="cursor:pointer"
-           @click=${() => this._selectSeries(s)}>
+           @click=${(e) => { e.stopPropagation(); this._selectSeries(s); }}>
         <div class="hp-series-wins-hdr-row">
           <span class="hp-series-wins-hdr">W</span>
         </div>
@@ -1206,6 +1208,7 @@ class HockeyPlayoffCard extends LitElement {
   _selectSeries(s) {
     this._selectedSeries = s;
     this._view = "series";
+    this.requestUpdate();
   }
 
   _seriesLogo(url, abbrev) {
@@ -1272,6 +1275,65 @@ class HockeyPlayoffCard extends LitElement {
     if (t1wins === t2wins) return t1wins > 0 ? `Tied ${t1wins}–${t2wins}` : "Game 1";
     const leader = t1wins > t2wins ? s.team1_abbrev : s.team2_abbrev;
     return `${leader} leads ${Math.max(t1wins, t2wins)}–${Math.min(t1wins, t2wins)}`;
+  }
+
+  // ------------------------------------------------------------------
+  // Helpers shared with team card (duplicated here — HockeyPlayoffCard
+  // does not extend HockeyTrackerCard)
+  // ------------------------------------------------------------------
+
+  _periodLabel(period) {
+    if (period <= 3) return `Period ${period}`;
+    if (period === 4) return "OT";
+    return `OT${period - 3}`;
+  }
+
+  _isToday(iso) {
+    if (!iso) return false;
+    try {
+      const tz = this.hass?.config?.time_zone ?? undefined;
+      const opts = { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" };
+      return (
+        new Date(iso).toLocaleDateString(undefined, opts) ===
+        new Date().toLocaleDateString(undefined, opts)
+      );
+    } catch {
+      return new Date(iso).toDateString() === new Date().toDateString();
+    }
+  }
+
+  _fmtGameTime(iso) {
+    if (!iso) return "";
+    try {
+      const tz = this.hass?.config?.time_zone ?? undefined;
+      return new Date(iso).toLocaleString(undefined, {
+        timeZone: tz,
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short",
+      });
+    } catch {
+      return iso;
+    }
+  }
+
+  _upcomingTeams(awayLogo, awayName, homeLogo, homeName) {
+    return html`
+      <div class="ht-next-game-teams">
+        <div class="ht-next-game-team">
+          ${this._gameLogo(awayLogo, 64)}
+          <span>${awayName ?? "Away"}</span>
+        </div>
+        <span class="ht-next-game-at">@</span>
+        <div class="ht-next-game-team">
+          ${this._gameLogo(homeLogo, 64)}
+          <span>${homeName ?? "Home"}</span>
+        </div>
+      </div>
+    `;
   }
 
   // ------------------------------------------------------------------
@@ -1464,6 +1526,30 @@ class HockeyPlayoffCard extends LitElement {
         </div>
       `;
     }
+    // Try to show the entity's next_game if it's confirmed to be for this series.
+    // The coordinator now includes home/away team IDs or abbrevs in next_game so
+    // we can reliably match without comparing long name strings.
+    if (this.config.show_next_game !== false) {
+      const ng = this._attr.next_game;
+      if (ng?.game_date) {
+        const ngIds = new Set(
+          [ng.home_team_abbrev, ng.away_team_abbrev, ng.home_team_id, ng.away_team_id]
+            .filter(Boolean).map(String)
+        );
+        const s1 = [s.team1_id, s.team1_abbrev].filter(Boolean).map(String);
+        const s2 = [s.team2_id, s.team2_abbrev].filter(Boolean).map(String);
+        if (s1.some(id => ngIds.has(id)) && s2.some(id => ngIds.has(id))) {
+          return html`
+            <div class="ht-next-game">
+              <div class="ht-next-game-label">Next Game</div>
+              ${this._upcomingTeams(ng.away_logo_url, ng.away_team, ng.home_logo_url, ng.home_team)}
+              <div class="ht-next-game-time">${this._fmtGameTime(ng.game_date)}</div>
+              ${ng.venue ? html`<div class="ht-next-game-venue">${ng.venue}</div>` : ""}
+            </div>
+          `;
+        }
+      }
+    }
     // Fallback: show the series standing as a subtle status line
     const statusLabel = this._seriesStatusLabel(s);
     if (statusLabel) {
@@ -1572,7 +1658,7 @@ window.customCards.push({
   type: "hockey-tracker-card",
   name: "Hockey Tracker Card",
   description: "Live scores, schedule, and stats for any supported hockey league team.",
-  version: "1.8.0",
+  version: "1.9.2",
   preview: false,
   documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
 });
@@ -1580,7 +1666,7 @@ window.customCards.push({
   type: "hockey-playoff-card",
   name: "Hockey Playoff Card",
   description: "Playoff bracket and live game view for followed teams across any supported league.",
-  version: "1.8.0",
+  version: "1.9.2",
   preview: false,
   documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
 });
