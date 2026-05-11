@@ -38,6 +38,8 @@ This package includes two card types:
 - **Click any series** to drill into a series detail view — "Series" standings heading, team names with win counts (leader highlighted), then a full game section mirroring the team tracker card
 - Bracket button (🏒) in header always returns to the full bracket
 - Rounds auto-collapse to focus on the current round — click any round header to expand/collapse
+- Title auto-displays the league cup name (e.g. "Stanley Cup Playoffs", "Calder Cup Playoffs", "Kelly Cup Playoffs") — override with a custom `title` option
+- Header shows a pulsing **LIVE** badge during active games; a hockey puck icon is shown otherwise (no badge for PRE, FINAL, or NO GAME)
 - Full UI editor — no YAML required
 - `hp-` prefixed CSS classes for styling with card-mod
 
@@ -163,7 +165,7 @@ Notification alerts (win, pre-game, goal) are configured in the **integration**,
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `entity` | string | **required** | The Playoff Tracker sensor entity |
-| `title` | string | sensor name | Override the card title |
+| `title` | string | league cup name | Override the card title (auto-derived as "Stanley Cup Playoffs", "Calder Cup Playoffs", etc.) |
 | `show_logo` | boolean | `true` | Show team logos in bracket and game views |
 | `logo_size` | number | `132` | Logo size in pixels for game view (24–200) |
 | `show_shots` | boolean | `true` | Show shots on goal row in game view |
@@ -326,11 +328,11 @@ All elements in the `hockey-playoff-card` have stable `hp-` prefixed CSS class n
 |-------|---------|
 | `.hp-content` | Root content wrapper |
 | `.hp-header` | Top bar (badge + title + view buttons) |
-| `.hp-badge` | State badge pill |
-| `.hp-badge--live` | Badge modifier — a followed team's game is in progress |
-| `.hp-badge--pre` | Badge modifier — pre-game |
-| `.hp-badge--final` | Badge modifier — game ended |
-| `.hp-badge--none` | Badge modifier — no active game |
+| `.hp-badge` | State badge pill (only rendered when a followed team's game is LIVE) |
+| `.hp-badge--live` | Badge modifier — a followed team's game is in progress (pulsing red) |
+| `.hp-badge--pre` | Badge modifier — pre-game (not rendered by default; available for card-mod targeting) |
+| `.hp-badge--final` | Badge modifier — game ended (not rendered by default; available for card-mod targeting) |
+| `.hp-badge--none` | Badge modifier — no active game (not rendered by default; available for card-mod targeting) |
 | `.hp-title` | Card title text |
 | `.hp-header-btns` | Container for bracket / game / refresh buttons |
 | `.hp-icon-btn` | Individual header icon button |
