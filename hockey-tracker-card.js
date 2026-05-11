@@ -1,5 +1,5 @@
 /**
- * Hockey Tracker Card v1.9.4
+ * Hockey Tracker Card v1.9.5
  * https://github.com/linkian19/ha-hockey-tracker-card
  *
  * Inspired by ha-teamtracker (https://github.com/vasqued2/ha-teamtracker) by vasqued2.
@@ -1332,6 +1332,20 @@ class HockeyPlayoffCard extends LitElement {
     }
   }
 
+  _fmtShortDate(iso) {
+    if (!iso) return "";
+    try {
+      const tz = this.hass?.config?.time_zone ?? undefined;
+      return new Date(iso).toLocaleDateString(undefined, {
+        timeZone: tz,
+        month: "short",
+        day: "numeric",
+      });
+    } catch {
+      return iso;
+    }
+  }
+
   _upcomingTeams(awayLogo, awayName, homeLogo, homeName) {
     return html`
       <div class="ht-next-game-teams">
@@ -1687,7 +1701,7 @@ window.customCards.push({
   type: "hockey-tracker-card",
   name: "Hockey Tracker Card",
   description: "Live scores, schedule, and stats for any supported hockey league team.",
-  version: "1.9.4",
+  version: "1.9.5",
   preview: false,
   documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
 });
@@ -1695,7 +1709,7 @@ window.customCards.push({
   type: "hockey-playoff-card",
   name: "Hockey Playoff Card",
   description: "Playoff bracket and live game view for followed teams across any supported league.",
-  version: "1.9.4",
+  version: "1.9.5",
   preview: false,
   documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
 });
