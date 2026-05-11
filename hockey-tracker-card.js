@@ -1,5 +1,5 @@
 /**
- * Hockey Tracker Card v1.9.3
+ * Hockey Tracker Card v1.9.4
  * https://github.com/linkian19/ha-hockey-tracker-card
  *
  * Inspired by ha-teamtracker (https://github.com/vasqued2/ha-teamtracker) by vasqued2.
@@ -1005,7 +1005,7 @@ class HockeyPlayoffCard extends LitElement {
         .hp-badge--final{ background: #2e7d32; }
         .hp-badge--none { background: #555; }
         @keyframes hp-pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
-        .hp-title { flex: 1; font-weight: 600; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .hp-title { flex: 1; font-weight: 600; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
         .hp-header-btns { display: flex; gap: 4px; flex-shrink: 0; }
         .hp-icon-btn { background: none; border: none; cursor: pointer; color: var(--primary-text-color); opacity: 0.6; padding: 4px; border-radius: 4px; font-size: 1.1rem; line-height: 1; }
         .hp-icon-btn:hover { opacity: 1; background: var(--secondary-background-color); }
@@ -1050,6 +1050,8 @@ class HockeyPlayoffCard extends LitElement {
         .hp-standings-leader { color: var(--primary-color, #03a9f4) !important; }
         .hp-standings-divider { border-top: 1px solid var(--divider-color); margin: 0 0 8px; }
         .hp-series-no-game-status { text-align: center; font-size: 0.78rem; color: var(--secondary-text-color); padding: 4px 0; }
+        /* hp-standings-divider already provides the visual separator; cancel the inherited border */
+        .ht-next-game { border-top: none; padding-top: 4px; }
       `,
     ];
   }
@@ -1117,17 +1119,26 @@ class HockeyPlayoffCard extends LitElement {
   }
 
   _badge() {
-    const state = this._stateObj?.state || "NO_GAME";
-    const map = { LIVE: ["live", "LIVE"], PRE: ["pre", "PRE-GAME"], FINAL: ["final", "FINAL"] };
-    const [cls, label] = map[state] || ["none", "NO GAME"];
-    return html`<span class="hp-badge hp-badge--${cls}">${label}</span>`;
+    if (this._stateObj?.state === "LIVE") {
+      return html`<span class="hp-badge hp-badge--live">LIVE</span>`;
+    }
+    return html`<ha-icon icon="mdi:hockey-puck" style="color:var(--secondary-text-color);opacity:0.5;flex-shrink:0;--mdi-icon-size:1.2rem;"></ha-icon>`;
   }
 
   _title() {
     if (this.config.title) return this.config.title;
     const league = this._attr.league || "";
-    const teams = (this._attr.followed_teams || []).join(", ");
-    return teams ? `${league} Playoffs — ${teams}` : `${league} Playoffs`;
+    const cupNames = {
+      NHL: "Stanley Cup Playoffs",
+      AHL: "Calder Cup Playoffs",
+      ECHL: "Kelly Cup Playoffs",
+      OHL: "OHL Playoffs",
+      WHL: "WHL Playoffs",
+      QMJHL: "President's Cup Playoffs",
+      PWHL: "PWHL Playoffs",
+      USHL: "Clark Cup Playoffs",
+    };
+    return cupNames[league] || `${league} Playoffs`;
   }
 
   _timeAgo(iso) {
@@ -1676,7 +1687,7 @@ window.customCards.push({
   type: "hockey-tracker-card",
   name: "Hockey Tracker Card",
   description: "Live scores, schedule, and stats for any supported hockey league team.",
-  version: "1.9.3",
+  version: "1.9.4",
   preview: false,
   documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
 });
@@ -1684,7 +1695,7 @@ window.customCards.push({
   type: "hockey-playoff-card",
   name: "Hockey Playoff Card",
   description: "Playoff bracket and live game view for followed teams across any supported league.",
-  version: "1.9.3",
+  version: "1.9.4",
   preview: false,
   documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
 });
