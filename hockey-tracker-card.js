@@ -1,5 +1,5 @@
 /**
- * Hockey Tracker Card v1.9.2
+ * Hockey Tracker Card v1.9.3
  * https://github.com/linkian19/ha-hockey-tracker-card
  *
  * Inspired by ha-teamtracker (https://github.com/vasqued2/ha-teamtracker) by vasqued2.
@@ -1260,8 +1260,9 @@ class HockeyPlayoffCard extends LitElement {
       return [p, c].filter(Boolean).join(" ") || "LIVE";
     }
     if (s.game_state === "PRE") {
+      const dayLabel = this._isToday(s.game_start_time) ? "Today" : this._fmtShortDate(s.game_start_time) || "Upcoming";
       const t = s.game_start_time ? ` · ${this._fmtSeriesTime(s.game_start_time)}` : "";
-      return `Today${t}`;
+      return `${dayLabel}${t}`;
     }
     // game_state === "FINAL" means today's game just ended — show series standing, not "Final"
     if (s.status === "complete") {
@@ -1331,6 +1332,23 @@ class HockeyPlayoffCard extends LitElement {
         <div class="ht-next-game-team">
           ${this._gameLogo(homeLogo, 64)}
           <span>${homeName ?? "Home"}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // Neutral team pair display (no "@" — used when home/away isn't known, e.g. bracket-series PRE view)
+  _seriesTeams(logo1, name1, logo2, name2) {
+    return html`
+      <div class="ht-next-game-teams">
+        <div class="ht-next-game-team">
+          ${this._gameLogo(logo1, 64)}
+          <span>${name1 ?? "Team 1"}</span>
+        </div>
+        <span class="ht-next-game-at">vs</span>
+        <div class="ht-next-game-team">
+          ${this._gameLogo(logo2, 64)}
+          <span>${name2 ?? "Team 2"}</span>
         </div>
       </div>
     `;
@@ -1521,7 +1539,7 @@ class HockeyPlayoffCard extends LitElement {
       return html`
         <div class="ht-next-game">
           <div class="ht-next-game-label">${label}</div>
-          ${this._upcomingTeams(s.team1_logo_url, s.team1_name || s.team1_abbrev, s.team2_logo_url, s.team2_name || s.team2_abbrev)}
+          ${this._seriesTeams(s.team1_logo_url, s.team1_name || s.team1_abbrev, s.team2_logo_url, s.team2_name || s.team2_abbrev)}
           <div class="ht-next-game-time">${this._fmtGameTime(s.game_start_time)}</div>
         </div>
       `;
@@ -1658,7 +1676,7 @@ window.customCards.push({
   type: "hockey-tracker-card",
   name: "Hockey Tracker Card",
   description: "Live scores, schedule, and stats for any supported hockey league team.",
-  version: "1.9.2",
+  version: "1.9.3",
   preview: false,
   documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
 });
@@ -1666,7 +1684,7 @@ window.customCards.push({
   type: "hockey-playoff-card",
   name: "Hockey Playoff Card",
   description: "Playoff bracket and live game view for followed teams across any supported league.",
-  version: "1.9.2",
+  version: "1.9.3",
   preview: false,
   documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
 });
