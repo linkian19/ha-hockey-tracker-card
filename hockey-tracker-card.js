@@ -1,5 +1,5 @@
 /**
- * Hockey Tracker Card v1.9.5
+ * Hockey Tracker Card v1.10.0
  * https://github.com/linkian19/ha-hockey-tracker-card
  *
  * Inspired by ha-teamtracker (https://github.com/vasqued2/ha-teamtracker) by vasqued2.
@@ -28,6 +28,9 @@ class HockeyTrackerCardEditor extends LitElement {
       show_events: false,
       events_count: 10,
       collapsible_events: true,
+      show_event_goals: true,
+      show_event_penalties: true,
+      show_event_shots: true,
       logo_size: 64,
       show_last_updated: true,
       ...config,
@@ -57,6 +60,9 @@ class HockeyTrackerCardEditor extends LitElement {
         selector: { number: { min: 3, max: 25, step: 1, mode: "box" } },
       },
       { name: "collapsible_events", selector: { boolean: {} } },
+      { name: "show_event_goals", selector: { boolean: {} } },
+      { name: "show_event_penalties", selector: { boolean: {} } },
+      { name: "show_event_shots", selector: { boolean: {} } },
       {
         name: "logo_size",
         default: 64,
@@ -80,6 +86,9 @@ class HockeyTrackerCardEditor extends LitElement {
       show_events:          "Show live game events (goals & penalties) during active games",
       events_count:         "Number of events to display (3–25, default: 10)",
       collapsible_events:   "Allow game events section to be collapsed",
+      show_event_goals:     "Show goal events in ticker",
+      show_event_penalties: "Show penalty events in ticker",
+      show_event_shots:     "Show shot events in ticker (NHL only)",
       logo_size:            "Logo size in px (24–200, default: 64)",
     }[schema.name] ?? schema.name;
   }
@@ -337,8 +346,9 @@ class HockeyTrackerCard extends LitElement {
         border-radius: 50%;
         flex-shrink: 0;
       }
-      .ht-event-goal .ht-event-dot  { background: #388e3c; }
+      .ht-event-goal .ht-event-dot    { background: #388e3c; }
       .ht-event-penalty .ht-event-dot { background: #e65100; }
+      .ht-event-shot .ht-event-dot    { background: #0288d1; }
       .ht-event-meta {
         color: var(--secondary-text-color);
         font-size: 0.72rem;
@@ -468,6 +478,9 @@ class HockeyTrackerCard extends LitElement {
       show_events: false,
       events_count: 10,
       collapsible_events: true,
+      show_event_goals: true,
+      show_event_penalties: true,
+      show_event_shots: true,
       logo_size: 64,
       show_last_updated: true,
     };
@@ -486,6 +499,9 @@ class HockeyTrackerCard extends LitElement {
       show_events: false,
       events_count: 10,
       collapsible_events: true,
+      show_event_goals: true,
+      show_event_penalties: true,
+      show_event_shots: true,
       logo_size: 64,
       show_last_updated: true,
       ...config,
@@ -692,7 +708,13 @@ class HockeyTrackerCard extends LitElement {
   // ------------------------------------------------------------------
 
   _renderGameEvents(events) {
-    const count = Math.min(this.config.events_count || 10, events.length);
+    const visible = events.filter(e => {
+      if (e.type === "goal" && this.config.show_event_goals === false) return false;
+      if (e.type === "penalty" && this.config.show_event_penalties === false) return false;
+      if (e.type === "shot" && this.config.show_event_shots === false) return false;
+      return true;
+    });
+    const count = Math.min(this.config.events_count || 10, visible.length);
     const collapsible = this.config.collapsible_events !== false;
     const collapsed = collapsible && this._eventsCollapsed;
     return html`
@@ -707,8 +729,10 @@ class HockeyTrackerCard extends LitElement {
             ></ha-icon>
           ` : ""}
         </div>
-        ${!collapsed ? events.slice(0, count).map(e =>
-          e.type === "goal" ? this._renderGoal(e) : this._renderPenalty(e)
+        ${!collapsed ? visible.slice(0, count).map(e =>
+          e.type === "goal" ? this._renderGoal(e) :
+          e.type === "shot" ? this._renderShot(e) :
+          this._renderPenalty(e)
         ) : ""}
       </div>
     `;
@@ -738,6 +762,20 @@ class HockeyTrackerCard extends LitElement {
         <span class="ht-event-meta">P${e.period} · ${e.time}</span>
         <span class="ht-event-abbrev">${e.team_abbrev}</span>
         <span class="ht-event-body">${e.player_number != null ? `#${e.player_number} ` : ""}${e.player_name} — ${e.description} (${e.minutes}min)</span>
+      </div>
+    `;
+  }
+
+  _renderShot(e) {
+    const shotType = e.shot_type
+      ? e.shot_type.charAt(0).toUpperCase() + e.shot_type.slice(1).replace(/-/g, " ")
+      : "";
+    return html`
+      <div class="ht-event-row ht-event-shot ${e.is_tracked_team ? "ht-event--ours" : ""}">
+        <span class="ht-event-dot"></span>
+        <span class="ht-event-meta">P${e.period} · ${e.time}</span>
+        <span class="ht-event-abbrev">${e.team_abbrev}</span>
+        <span class="ht-event-body">${e.player_name}${shotType ? ` — ${shotType}` : ""}</span>
       </div>
     `;
   }
@@ -909,6 +947,9 @@ class HockeyPlayoffCardEditor extends LitElement {
       show_events: true,
       events_count: 10,
       collapsible_events: true,
+      show_event_goals: true,
+      show_event_penalties: true,
+      show_event_shots: true,
       show_last_updated: true,
       ...config,
     };
@@ -933,6 +974,9 @@ class HockeyPlayoffCardEditor extends LitElement {
         selector: { number: { min: 3, max: 25, step: 1, mode: "box" } },
       },
       { name: "collapsible_events", selector: { boolean: {} } },
+      { name: "show_event_goals", selector: { boolean: {} } },
+      { name: "show_event_penalties", selector: { boolean: {} } },
+      { name: "show_event_shots", selector: { boolean: {} } },
       { name: "show_last_updated", selector: { boolean: {} } },
     ];
   }
@@ -947,7 +991,10 @@ class HockeyPlayoffCardEditor extends LitElement {
       show_next_game:     "Show next game when no game is active",
       show_events:        "Show live game events (goals & penalties) in game view",
       events_count:       "Number of events to display (3–25, default: 10)",
-      collapsible_events: "Allow game events section to be collapsed",
+      collapsible_events:   "Allow game events section to be collapsed",
+      show_event_goals:     "Show goal events in ticker",
+      show_event_penalties: "Show penalty events in ticker",
+      show_event_shots:     "Show shot events in ticker (NHL only)",
       show_last_updated:  "Show time since last data refresh",
     }[schema.name] ?? schema.name;
   }
@@ -1076,6 +1123,9 @@ class HockeyPlayoffCard extends LitElement {
       show_events: true,
       events_count: 10,
       collapsible_events: true,
+      show_event_goals: true,
+      show_event_penalties: true,
+      show_event_shots: true,
       show_last_updated: true,
       ...config,
     };
@@ -1143,10 +1193,15 @@ class HockeyPlayoffCard extends LitElement {
 
   _timeAgo(iso) {
     if (!iso) return "";
-    const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-    if (secs < 60) return `${secs}s ago`;
-    if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
-    return `${Math.floor(secs / 3600)}h ago`;
+    try {
+      const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+      if (secs < 10) return "just now";
+      if (secs < 60) return `${secs}s ago`;
+      if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+      return `${Math.floor(secs / 3600)}h ago`;
+    } catch {
+      return "";
+    }
   }
 
   // ------------------------------------------------------------------
@@ -1611,8 +1666,13 @@ class HockeyPlayoffCard extends LitElement {
 
   _renderPlayoffEvents(attr, isActive) {
     if (!this.config.show_events || !isActive) return html``;
-    const events = (attr.game_events || []).slice(0, this.config.events_count || 10);
-    if (!events.length) return html``;
+    const visible = (attr.game_events || []).filter(e => {
+      if (e.type === "goal" && this.config.show_event_goals === false) return false;
+      if (e.type === "penalty" && this.config.show_event_penalties === false) return false;
+      if (e.type === "shot" && this.config.show_event_shots === false) return false;
+      return true;
+    }).slice(0, this.config.events_count || 10);
+    if (!visible.length) return html``;
 
     const collapsible = this.config.collapsible_events !== false;
     const collapsed = collapsible && this._eventsCollapsed;
@@ -1629,22 +1689,27 @@ class HockeyPlayoffCard extends LitElement {
             ></ha-icon>
           ` : ""}
         </div>
-        ${!collapsed ? events.map((e) => html`
-          <div class="ht-event-row ${e.type === "goal" ? "ht-event-goal" : "ht-event-penalty"} ${e.is_tracked_team ? "ht-event--ours" : ""}">
-            <span class="ht-event-dot"></span>
-            <span class="ht-event-meta">P${e.period} ${e.time}</span>
-            <span class="ht-event-abbrev">${e.team_abbrev}</span>
-            <span class="ht-event-body">
-              ${e.player_name}
-              ${e.type === "goal" ? html`
-                ${e.is_power_play ? html`<span class="ht-event-tag">PP</span>` : ""}
-                ${e.is_short_handed ? html`<span class="ht-event-tag">SH</span>` : ""}
-                ${e.is_empty_net ? html`<span class="ht-event-tag">EN</span>` : ""}
-                ${e.assists?.length ? html`<span class="ht-event-assists"> · ${e.assists.join(", ")}</span>` : ""}
-              ` : html`<span class="ht-event-assists">${e.description || ""} ${e.minutes ? `(${e.minutes} min)` : ""}</span>`}
-            </span>
-          </div>
-        `) : ""}
+        ${!collapsed ? visible.map((e) => {
+          const typeClass = e.type === "goal" ? "ht-event-goal" : e.type === "shot" ? "ht-event-shot" : "ht-event-penalty";
+          return html`
+            <div class="ht-event-row ${typeClass} ${e.is_tracked_team ? "ht-event--ours" : ""}">
+              <span class="ht-event-dot"></span>
+              <span class="ht-event-meta">P${e.period} ${e.time}</span>
+              <span class="ht-event-abbrev">${e.team_abbrev}</span>
+              <span class="ht-event-body">
+                ${e.player_name}
+                ${e.type === "goal" ? html`
+                  ${e.is_power_play ? html`<span class="ht-event-tag">PP</span>` : ""}
+                  ${e.is_short_handed ? html`<span class="ht-event-tag">SH</span>` : ""}
+                  ${e.is_empty_net ? html`<span class="ht-event-tag">EN</span>` : ""}
+                  ${e.assists?.length ? html`<span class="ht-event-assists"> · ${e.assists.join(", ")}</span>` : ""}
+                ` : e.type === "shot" ? html`
+                  ${e.shot_type ? html`<span class="ht-event-assists"> — ${e.shot_type.charAt(0).toUpperCase()}${e.shot_type.slice(1).replace(/-/g, " ")}</span>` : ""}
+                ` : html`<span class="ht-event-assists">${e.description || ""} ${e.minutes ? `(${e.minutes} min)` : ""}</span>`}
+              </span>
+            </div>
+          `;
+        }) : ""}
       </div>
     `;
   }
@@ -1701,7 +1766,7 @@ window.customCards.push({
   type: "hockey-tracker-card",
   name: "Hockey Tracker Card",
   description: "Live scores, schedule, and stats for any supported hockey league team.",
-  version: "1.9.5",
+  version: "1.10.0",
   preview: false,
   documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
 });
@@ -1709,7 +1774,7 @@ window.customCards.push({
   type: "hockey-playoff-card",
   name: "Hockey Playoff Card",
   description: "Playoff bracket and live game view for followed teams across any supported league.",
-  version: "1.9.5",
+  version: "1.10.0",
   preview: false,
   documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
 });
