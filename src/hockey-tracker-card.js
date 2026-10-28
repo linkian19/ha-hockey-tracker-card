@@ -36,6 +36,45 @@ function findHockeySensor(hass, playoff) {
   ) ?? "";
 }
 
+// Date/time formatting options from the user's HA profile: language,
+// 12/24-hour setting and "server vs local" time zone (hass.locale), instead of
+// the browser locale + always the server time zone.
+function localeOpts(hass) {
+  const loc = hass?.locale ?? {};
+  const language = loc.time_format === "system" ? undefined : (loc.language || hass?.language || undefined);
+  const timeZone = loc.time_zone === "local" ? undefined : (hass?.config?.time_zone || undefined);
+  const hour12 = loc.time_format === "12" ? true : loc.time_format === "24" ? false : undefined;
+  return { language, timeZone, hour12 };
+}
+
+// Only re-render on hass updates that touch this card's entity (or change
+// theme/language) — HA pushes a new hass object on every state change.
+function hassChangeAffects(changedProps, hass, entityId) {
+  if (!changedProps.has("hass") || changedProps.size > 1) return true;
+  const oldHass = changedProps.get("hass");
+  if (!oldHass || !hass) return true;
+  return (
+    oldHass.states[entityId] !== hass.states[entityId] ||
+    oldHass.locale !== hass.locale ||
+    oldHass.themes !== hass.themes
+  );
+}
+
+// Enter/Space activation for non-button elements with role="button"
+function onActivateKey(handler) {
+  return (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    handler(e);
+  };
+}
+
+function fireConfigChanged(el, config) {
+  el.dispatchEvent(new CustomEvent("config-changed", {
+    detail: { config }, bubbles: true, composed: true,
+  }));
+}
+
 // Refresh via the integration's force_refresh service (also clears its schedule
 // cache); fall back to a plain entity update for older integration versions.
 async function refreshEntity(hass, entityId) {
@@ -138,7 +177,7 @@ class HockeyTrackerCardEditor extends LitElement {
 
   _valueChanged(ev) {
     ev.stopPropagation();
-    this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: ev.detail.value } }));
+    fireConfigChanged(this, ev.detail.value);
   }
 
   render() {
@@ -178,6 +217,13 @@ class HockeyTrackerCard extends LitElement {
   static get styles() {
     return css`
       :host { display: block; }
+
+      /* Keyboard focus ring for clickable rows/toggles (also used by the playoff card) */
+      [role="button"]:focus-visible, [role="link"]:focus-visible {
+        outline: 2px solid var(--primary-color, #03a9f4);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
 
       /* ── Root content wrapper ────────────────────────── */
       .ht-content { padding: 14px 16px 12px; }
@@ -648,6 +694,15 @@ class HockeyTrackerCard extends LitElement {
 
   getCardSize() { return 4; }
 
+  // Sections layout: full width by default, height follows content
+  getGridOptions() {
+    return { columns: 12, rows: "auto", min_columns: 6 };
+  }
+
+  shouldUpdate(changedProps) {
+    return hassChangeAffects(changedProps, this.hass, this.config?.entity);
+  }
+
   // ------------------------------------------------------------------
   // Display mode — server manages the FINAL window, card just follows state
   // ------------------------------------------------------------------
@@ -929,7 +984,12 @@ class HockeyTrackerCard extends LitElement {
             <ha-icon
               class="ht-collapse-btn"
               icon="${collapsed ? "mdi:chevron-down" : "mdi:chevron-up"}"
+              role="button"
+              tabindex="0"
+              aria-label="${collapsed ? "Expand game events" : "Collapse game events"}"
+              aria-expanded="${collapsed ? "false" : "true"}"
               @click=${() => { this._eventsCollapsed = !this._eventsCollapsed; this.requestUpdate(); }}
+              @keydown=${onActivateKey(() => { this._eventsCollapsed = !this._eventsCollapsed; this.requestUpdate(); })}
             ></ha-icon>
           ` : ""}
         </div>
@@ -997,14 +1057,22 @@ class HockeyTrackerCard extends LitElement {
             <ha-icon
               class="ht-collapse-btn"
               icon="${collapsed ? "mdi:chevron-down" : "mdi:chevron-up"}"
+              role="button"
+              tabindex="0"
+              aria-label="${collapsed ? "Expand recent games" : "Collapse recent games"}"
+              aria-expanded="${collapsed ? "false" : "true"}"
               @click=${() => { this._recentCollapsed = !this._recentCollapsed; this.requestUpdate(); }}
+              @keydown=${onActivateKey(() => { this._recentCollapsed = !this._recentCollapsed; this.requestUpdate(); })}
             ></ha-icon>
           ` : ""}
         </div>
         ${!collapsed ? games.slice(0, count).map(g => html`
           <div
             class="ht-recent-row ${g.game_url ? "ht-recent-row--link" : ""}"
+            role=${g.game_url ? "link" : "listitem"}
+            tabindex=${g.game_url ? "0" : "-1"}
             @click=${() => g.game_url && window.open(g.game_url, "_blank", "noopener")}
+            @keydown=${onActivateKey(() => g.game_url && window.open(g.game_url, "_blank", "noopener"))}
           >
             <span class="ht-result ${g.win ? 'ht-result--win' : 'ht-result--loss'}">${g.win ? "W" : "L"}</span>
             <span class="ht-opponent">${g.is_home ? "vs" : "@"} ${g.opponent}</span>
@@ -1054,11 +1122,11 @@ class HockeyTrackerCard extends LitElement {
   _isToday(iso) {
     if (!iso) return false;
     try {
-      const tz = this.hass?.config?.time_zone ?? undefined;
+      const { language, timeZone: tz, hour12 } = localeOpts(this.hass);
       const opts = { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" };
       return (
-        new Date(iso).toLocaleDateString(undefined, opts) ===
-        new Date().toLocaleDateString(undefined, opts)
+        new Date(iso).toLocaleDateString(language, opts) ===
+        new Date().toLocaleDateString(language, opts)
       );
     } catch {
       return new Date(iso).toDateString() === new Date().toDateString();
@@ -1068,9 +1136,10 @@ class HockeyTrackerCard extends LitElement {
   _fmtGameTime(iso) {
     if (!iso) return "";
     try {
-      const tz = this.hass?.config?.time_zone ?? undefined;
-      return new Date(iso).toLocaleString(undefined, {
+      const { language, timeZone: tz, hour12 } = localeOpts(this.hass);
+      return new Date(iso).toLocaleString(language, {
         timeZone: tz,
+        hour12,
         weekday: "short",
         month: "short",
         day: "numeric",
@@ -1086,9 +1155,10 @@ class HockeyTrackerCard extends LitElement {
   _fmtShortDate(iso) {
     if (!iso) return "";
     try {
-      const tz = this.hass?.config?.time_zone ?? undefined;
-      return new Date(iso).toLocaleDateString(undefined, {
+      const { language, timeZone: tz, hour12 } = localeOpts(this.hass);
+      return new Date(iso).toLocaleDateString(language, {
         timeZone: tz,
+        hour12,
         month: "short",
         day: "numeric",
       });
@@ -1192,7 +1262,7 @@ class HockeyPlayoffCardEditor extends LitElement {
 
   _valueChanged(ev) {
     ev.stopPropagation();
-    this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: ev.detail.value } }));
+    fireConfigChanged(this, ev.detail.value);
   }
 
   render() {
@@ -1332,6 +1402,14 @@ class HockeyPlayoffCard extends LitElement {
     return { entity: findHockeySensor(hass, true) };
   }
 
+  getGridOptions() {
+    return { columns: 12, rows: "auto", min_columns: 6 };
+  }
+
+  shouldUpdate(changedProps) {
+    return hassChangeAffects(changedProps, this.hass, this.config?.entity);
+  }
+
   // Applied before render so the collapsed rounds show on the first render
   // (as updated() it only took effect on the next state change)
   willUpdate(changedProps) {
@@ -1410,7 +1488,10 @@ class HockeyPlayoffCard extends LitElement {
     }
     return html`${bracket.map((round) => html`
       <div class="hp-round">
-        <div class="hp-round-header" @click=${() => this._toggleRound(round.round_number)}>
+        <div class="hp-round-header" role="button" tabindex="0"
+             aria-expanded="${this._collapsedRounds.has(round.round_number) ? "false" : "true"}"
+             @click=${() => this._toggleRound(round.round_number)}
+             @keydown=${onActivateKey(() => this._toggleRound(round.round_number))}>
           <span>${round.round_name}</span>
           <span class="hp-round-chevron ${this._collapsedRounds.has(round.round_number) ? "" : "hp-round-chevron--open"}">▶</span>
         </div>
@@ -1442,7 +1523,10 @@ class HockeyPlayoffCard extends LitElement {
     return html`
       <div class="hp-series ${followed ? "hp-series--followed" : ""}"
            style="cursor:pointer"
-           @click=${(e) => { e.stopPropagation(); this._selectSeries(s); }}>
+           role="button" tabindex="0"
+           aria-label="${`${s.team1_name || s.team1_abbrev || "TBD"} vs ${s.team2_name || s.team2_abbrev || "TBD"}, series ${t1wins}–${t2wins}`}"
+           @click=${(e) => { e.stopPropagation(); this._selectSeries(s); }}
+           @keydown=${onActivateKey((e) => { e.stopPropagation(); this._selectSeries(s); })}>
         <div class="hp-series-wins-hdr-row">
           <span class="hp-series-wins-hdr">W</span>
         </div>
@@ -1488,9 +1572,10 @@ class HockeyPlayoffCard extends LitElement {
   _fmtSeriesTime(iso) {
     if (!iso) return "";
     try {
-      const tz = this.hass?.config?.time_zone ?? undefined;
-      return new Date(iso).toLocaleTimeString(undefined, {
+      const { language, timeZone: tz, hour12 } = localeOpts(this.hass);
+      return new Date(iso).toLocaleTimeString(language, {
         timeZone: tz,
+        hour12,
         hour: "numeric",
         minute: "2-digit",
         timeZoneName: "short",
@@ -1501,9 +1586,10 @@ class HockeyPlayoffCard extends LitElement {
   _fmtSeriesDateTime(iso) {
     if (!iso) return "";
     try {
-      const tz = this.hass?.config?.time_zone ?? undefined;
-      return new Date(iso).toLocaleString(undefined, {
+      const { language, timeZone: tz, hour12 } = localeOpts(this.hass);
+      return new Date(iso).toLocaleString(language, {
         timeZone: tz,
+        hour12,
         weekday: "short",
         month: "short",
         day: "numeric",
@@ -1553,11 +1639,11 @@ class HockeyPlayoffCard extends LitElement {
   _isToday(iso) {
     if (!iso) return false;
     try {
-      const tz = this.hass?.config?.time_zone ?? undefined;
+      const { language, timeZone: tz, hour12 } = localeOpts(this.hass);
       const opts = { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" };
       return (
-        new Date(iso).toLocaleDateString(undefined, opts) ===
-        new Date().toLocaleDateString(undefined, opts)
+        new Date(iso).toLocaleDateString(language, opts) ===
+        new Date().toLocaleDateString(language, opts)
       );
     } catch {
       return new Date(iso).toDateString() === new Date().toDateString();
@@ -1567,9 +1653,10 @@ class HockeyPlayoffCard extends LitElement {
   _fmtGameTime(iso) {
     if (!iso) return "";
     try {
-      const tz = this.hass?.config?.time_zone ?? undefined;
-      return new Date(iso).toLocaleString(undefined, {
+      const { language, timeZone: tz, hour12 } = localeOpts(this.hass);
+      return new Date(iso).toLocaleString(language, {
         timeZone: tz,
+        hour12,
         weekday: "short",
         month: "short",
         day: "numeric",
@@ -1585,9 +1672,10 @@ class HockeyPlayoffCard extends LitElement {
   _fmtShortDate(iso) {
     if (!iso) return "";
     try {
-      const tz = this.hass?.config?.time_zone ?? undefined;
-      return new Date(iso).toLocaleDateString(undefined, {
+      const { language, timeZone: tz, hour12 } = localeOpts(this.hass);
+      return new Date(iso).toLocaleDateString(language, {
         timeZone: tz,
+        hour12,
         month: "short",
         day: "numeric",
       });
@@ -1889,7 +1977,12 @@ class HockeyPlayoffCard extends LitElement {
             <ha-icon
               class="ht-collapse-btn"
               icon="${collapsed ? "mdi:chevron-down" : "mdi:chevron-up"}"
-              @click=${() => { this._eventsCollapsed = !this._eventsCollapsed; }}
+              role="button"
+              tabindex="0"
+              aria-label="${collapsed ? "Expand game events" : "Collapse game events"}"
+              aria-expanded="${collapsed ? "false" : "true"}"
+              @click=${() => { this._eventsCollapsed = !this._eventsCollapsed; this.requestUpdate(); }}
+              @keydown=${onActivateKey(() => { this._eventsCollapsed = !this._eventsCollapsed; this.requestUpdate(); })}
             ></ha-icon>
           ` : ""}
         </div>
@@ -1940,9 +2033,10 @@ class HockeyPlayoffCard extends LitElement {
               <button
                 class="hp-icon-btn ${!inSeries ? "hp-icon-btn--active" : ""}"
                 title="Bracket view"
+                aria-label="Bracket view"
                 @click=${() => { this._view = "bracket"; this._selectedSeries = null; }}
               >🏒</button>
-              <button class="hp-icon-btn" title="Refresh" @click=${this._refresh}>↻</button>
+              <button class="hp-icon-btn" title="Refresh" aria-label="Refresh" @click=${this._refresh}>↻</button>
             </div>
           </div>
           ${this.config.show_last_updated !== false

@@ -44,6 +44,13 @@ This package includes two card types:
 - Full UI editor — no YAML required
 - `hp-` prefixed CSS classes for styling with card-mod
 
+### Both cards
+- Dates and times follow your Home Assistant profile — language, 12/24-hour setting, and server vs. local time zone
+- Keyboard accessible — collapse toggles, recent-game rows, round headers and series can be focused and opened with Enter/Space
+- Only redraw when their own sensor changes (light on large dashboards)
+- Full-width by default in Sections dashboards, height follows content
+- No internet needed to load — the UI library is bundled into the card file
+
 ---
 
 ## Installation
