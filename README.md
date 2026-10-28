@@ -58,12 +58,23 @@ This package includes two card types:
 
 ### Manual
 
-1. Download `hockey-tracker-card.js` from this repo
+1. Download `hockey-tracker-card.js` from the latest [release](https://github.com/linkian19/ha-hockey-tracker-card/releases) (or `dist/hockey-tracker-card.js` in this repo)
 2. Copy it to `config/www/hockey-tracker-card.js` in your Home Assistant instance
 3. Go to **Settings → Dashboards → Resources** and add:
    - **URL:** `/local/hockey-tracker-card.js`
    - **Type:** JavaScript Module
 4. Reload your browser
+
+## Development
+
+The card source is `src/hockey-tracker-card.js`. Lit is bundled into the release file (no CDN import), so the cards load without internet access.
+
+```bash
+npm install
+npm run build   # writes dist/hockey-tracker-card.js
+```
+
+Commit the rebuilt `dist/` file with your changes — CI fails if it doesn't match the build.
 
 ---
 
