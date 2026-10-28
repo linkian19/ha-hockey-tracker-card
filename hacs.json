@@ -1,5 +1,6 @@
 {
   "name": "Hockey Tracker Card",
   "render_readme": true,
-  "filename": "hockey-tracker-card.js"
+  "filename": "hockey-tracker-card.js",
+  "homeassistant": "2024.4.0"
 }

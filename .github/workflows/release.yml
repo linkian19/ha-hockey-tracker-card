@@ -13,10 +13,36 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Tag matches package.json version
+        run: |
+          PKG="v$(node -p "require('./package.json').version")"
+          if [ "$PKG" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $PKG"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Committed dist matches build
+        run: git diff --exit-code -- dist/
+
+      # Release body gets the generated Full Changelog link; the New / Fixes /
+      # Notes summary shown in HA's update dialog is added afterwards with
+      # `gh release edit <tag> --notes-file <file>`
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: hockey-tracker-card.js
+          files: dist/hockey-tracker-card.js
           generate_release_notes: true

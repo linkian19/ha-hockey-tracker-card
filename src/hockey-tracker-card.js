@@ -1,11 +1,54 @@
 /**
- * Hockey Tracker Card v1.11.0
+ * Hockey Tracker Card
  * https://github.com/linkian19/ha-hockey-tracker-card
  *
  * Inspired by ha-teamtracker (https://github.com/vasqued2/ha-teamtracker) by vasqued2.
- * Requires ha-hockey-tracker integration v1.5.0+.
+ * Requires ha-hockey-tracker integration v1.9.0+.
+ *
+ * Source file — `npm run build` bundles Lit and writes dist/hockey-tracker-card.js
+ * (the file HACS installs). Lit is bundled rather than loaded from a CDN so the
+ * cards work without internet access and can't change between releases.
  */
-import { LitElement, html, css } from "https://unpkg.com/lit@2.8.0/index.js?module";
+import { LitElement, html, css } from "lit";
+
+// Injected from package.json at build time (see vite.config.js)
+const VERSION = __VERSION__;
+// False when this module is evaluated a second time (resource loaded twice)
+const FIRST_LOAD = !customElements.get("hockey-tracker-card");
+
+// Guarded registration — the resource can load twice (duplicate dashboard
+// resource, HACS cache-busting URL change) and a second define() throws,
+// which would break every card on the dashboard.
+function defineElement(name, cls) {
+  if (!customElements.get(name)) customElements.define(name, cls);
+}
+
+// First Hockey Tracker sensor for the card picker's default config.
+// playoff=true finds Playoff Tracker sensors (they carry a bracket attribute).
+function findHockeySensor(hass, playoff) {
+  if (!hass) return "";
+  const ids = Object.keys(hass.states).filter((id) => id.startsWith("sensor."));
+  const isHockey = (id) => hass.entities?.[id]
+    ? hass.entities[id].platform === "hockey_tracker"
+    : "team_name" in (hass.states[id].attributes || {}) || "bracket" in (hass.states[id].attributes || {});
+  return ids.find((id) =>
+    isHockey(id) && ("bracket" in (hass.states[id].attributes || {})) === playoff
+  ) ?? "";
+}
+
+// Refresh via the integration's force_refresh service (also clears its schedule
+// cache); fall back to a plain entity update for older integration versions.
+async function refreshEntity(hass, entityId) {
+  try {
+    await hass.callService("hockey_tracker", "force_refresh", { entity_id: entityId });
+  } catch {
+    try {
+      await hass.callService("homeassistant", "update_entity", { entity_id: entityId });
+    } catch (err) {
+      console.warn("[hockey-tracker-card] Refresh failed:", err);
+    }
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Editor
@@ -112,7 +155,7 @@ class HockeyTrackerCardEditor extends LitElement {
   }
 }
 
-customElements.define("hockey-tracker-card-editor", HockeyTrackerCardEditor);
+defineElement("hockey-tracker-card-editor", HockeyTrackerCardEditor);
 
 // ---------------------------------------------------------------------------
 // Card
@@ -526,9 +569,9 @@ class HockeyTrackerCard extends LitElement {
     return document.createElement("hockey-tracker-card-editor");
   }
 
-  static getStubConfig() {
+  static getStubConfig(hass) {
     return {
-      entity: "",
+      entity: findHockeySensor(hass, false),
       show_logo: true,
       show_shots: true,
       show_next_game: true,
@@ -569,24 +612,23 @@ class HockeyTrackerCard extends LitElement {
     };
   }
 
-  updated(changedProps) {
-    super.updated(changedProps);
+  // State-driven view changes are applied before render (willUpdate) so they
+  // land in the same render instead of triggering a second one
+  willUpdate(changedProps) {
+    super.willUpdate(changedProps);
     if (!changedProps.has("hass")) return;
     const stateObj = this.hass?.states[this.config?.entity];
     if (!stateObj) return;
     const state = stateObj.state;
     if ((state === "LIVE" || state === "FINAL") && this._showLastGame) {
       this._showLastGame = false;
-      this.requestUpdate();
     }
     const isLive = state === "LIVE";
     if (this.config.auto_collapse_recent !== false) {
       if (isLive && !this._prevLive) {
         this._recentCollapsed = true;
-        this.requestUpdate();
       } else if (!isLive && this._prevLive) {
         this._recentCollapsed = false;
-        this.requestUpdate();
       }
     }
     this._prevLive = isLive;
@@ -1072,21 +1114,11 @@ class HockeyTrackerCard extends LitElement {
 
   async _refresh() {
     if (!this.hass || !this.config.entity) return;
-    try {
-      // Use the integration's force_refresh service which also clears schedule cache
-      await this.hass.callService("hockey_tracker", "force_refresh", {
-        entity_id: this.config.entity,
-      });
-    } catch {
-      // Fallback if the integration version doesn't have the service yet
-      await this.hass.callService("homeassistant", "update_entity", {
-        entity_id: this.config.entity,
-      });
-    }
+    await refreshEntity(this.hass, this.config.entity);
   }
 }
 
-customElements.define("hockey-tracker-card", HockeyTrackerCard);
+defineElement("hockey-tracker-card", HockeyTrackerCard);
 
 // ---------------------------------------------------------------------------
 // Playoff Tracker Card Editor
@@ -1177,7 +1209,7 @@ class HockeyPlayoffCardEditor extends LitElement {
   }
 }
 
-customElements.define("hockey-playoff-card-editor", HockeyPlayoffCardEditor);
+defineElement("hockey-playoff-card-editor", HockeyPlayoffCardEditor);
 
 // ---------------------------------------------------------------------------
 // Playoff Tracker Card
@@ -1296,12 +1328,14 @@ class HockeyPlayoffCard extends LitElement {
     return document.createElement("hockey-playoff-card-editor");
   }
 
-  static getStubConfig() {
-    return { entity: "" };
+  static getStubConfig(hass) {
+    return { entity: findHockeySensor(hass, true) };
   }
 
-  updated(changedProps) {
-    super.updated(changedProps);
+  // Applied before render so the collapsed rounds show on the first render
+  // (as updated() it only took effect on the next state change)
+  willUpdate(changedProps) {
+    super.willUpdate(changedProps);
     // One-time auto-collapse of rounds before the current active round.
     // Guard: only run while in bracket view so a pending collapse never
     // interferes with a just-triggered series detail render.
@@ -1884,11 +1918,7 @@ class HockeyPlayoffCard extends LitElement {
 
   async _refresh() {
     if (!this.hass || !this.config?.entity) return;
-    try {
-      await this.hass.callService("hockey_tracker", "force_refresh", { entity_id: this.config.entity });
-    } catch {
-      await this.hass.callService("homeassistant", "update_entity", { entity_id: this.config.entity });
-    }
+    await refreshEntity(this.hass, this.config.entity);
   }
 
   render() {
@@ -1928,22 +1958,32 @@ class HockeyPlayoffCard extends LitElement {
   }
 }
 
-customElements.define("hockey-playoff-card", HockeyPlayoffCard);
+defineElement("hockey-playoff-card", HockeyPlayoffCard);
 
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "hockey-tracker-card",
-  name: "Hockey Tracker Card",
-  description: "Live scores, schedule, and stats for any supported hockey league team.",
-  version: "1.12.0",
-  preview: false,
-  documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
-});
-window.customCards.push({
-  type: "hockey-playoff-card",
-  name: "Hockey Playoff Card",
-  description: "Playoff bracket and live game view for followed teams across any supported league.",
-  version: "1.12.0",
-  preview: false,
-  documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
-});
+for (const card of [
+  {
+    type: "hockey-tracker-card",
+    name: "Hockey Tracker Card",
+    description: "Live scores, schedule, and stats for any supported hockey league team.",
+    version: VERSION,
+    preview: false,
+    documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
+  },
+  {
+    type: "hockey-playoff-card",
+    name: "Hockey Playoff Card",
+    description: "Playoff bracket and live game view for followed teams across any supported league.",
+    version: VERSION,
+    preview: false,
+    documentationURL: "https://github.com/linkian19/ha-hockey-tracker-card",
+  },
+]) {
+  if (!window.customCards.some((c) => c.type === card.type)) window.customCards.push(card);
+}
+
+if (FIRST_LOAD) console.info(
+  `%c HOCKEY-TRACKER-CARD %c v${VERSION} `,
+  "color: white; background: #1565c0; font-weight: 700;",
+  "color: #1565c0; background: white; font-weight: 700;"
+);
