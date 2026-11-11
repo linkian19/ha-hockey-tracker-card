@@ -55,13 +55,19 @@ This package includes two card types:
 
 ## Installation
 
-### HACS (recommended)
+### Marketplace (recommended)
 
-1. In Home Assistant, open **HACS → Frontend**
-2. Click the three-dot menu → **Custom repositories**
-3. Add `https://github.com/linkian19/ha-hockey-tracker-card` with category **Lovelace**
-4. Search for **Hockey Tracker Card** and install
-5. Reload your browser
+Home Assistant 2026.11 replaced HACS with the built-in **Marketplace**. Hockey Tracker Card is a custom repository:
+
+1. In Home Assistant, open **Settings → Marketplace**
+2. Select **Add from link** and enter `https://github.com/linkian19/ha-hockey-tracker-card`
+3. Select **Install** — the Marketplace adds the dashboard resource for you
+4. Reload your browser
+
+The Marketplace asks you to connect a GitHub account (a one-time device sign-in) the first time you add a custom repository.
+If you manage dashboard resources in YAML, the install dialog shows the resource entry to add yourself.
+
+> On Home Assistant versions before 2026.11, add the same URL under **HACS → ⋮ → Custom repositories** with category **Dashboard** instead.
 
 ### Manual
 
