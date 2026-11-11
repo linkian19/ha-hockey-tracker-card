@@ -736,8 +736,13 @@ class HockeyTrackerCard extends LitElement {
     const showingLastGame = this._showLastGame && canShowHistory;
     const mode = showingLastGame ? "last_game" : this._displayMode(state, a);
 
-    const badgeClass = { LIVE: "ht-badge--live", PRE: "ht-badge--pre", FINAL: "ht-badge--final", NO_GAME: "ht-badge--none" }[state] ?? "ht-badge--none";
-    const badgeLabel = { LIVE: "Live", PRE: "Pre-Game", FINAL: "Final", NO_GAME: "No Game" }[state] ?? state;
+    // The integration only reports PRE within a few hours of puck drop, so earlier
+    // on game day the state is NO_GAME — show "Game Day" instead of "No Game".
+    const gameDay = state === "NO_GAME" && this._isToday(a.next_game_date);
+    const badgeClass = gameDay ? "ht-badge--pre"
+      : { LIVE: "ht-badge--live", PRE: "ht-badge--pre", FINAL: "ht-badge--final", NO_GAME: "ht-badge--none" }[state] ?? "ht-badge--none";
+    const badgeLabel = gameDay ? "Game Day"
+      : { LIVE: "Live", PRE: "Pre-Game", FINAL: "Final", NO_GAME: "No Game" }[state] ?? state;
 
     return html`
       <ha-card>
@@ -938,7 +943,7 @@ class HockeyTrackerCard extends LitElement {
 
     return html`
       <div class="ht-next-game">
-        <div class="ht-next-game-label">Next Game</div>
+        <div class="ht-next-game-label">${this._isToday(a.next_game_date) ? "Today's Game" : "Next Game"}</div>
         ${this._upcomingTeams(a.next_game_away_logo_url, a.next_game_away_team, a.next_game_home_logo_url, a.next_game_home_team)}
         <div class="ht-next-game-time">${this._fmtGameTime(a.next_game_date)}</div>
         ${a.next_game_venue ? html`<div class="ht-next-game-venue">${a.next_game_venue}</div>` : ""}
@@ -1851,7 +1856,7 @@ class HockeyPlayoffCard extends LitElement {
     if (!ng?.game_date) return html``;
     return html`
       <div class="ht-next-game">
-        <div class="ht-next-game-label">Next Game</div>
+        <div class="ht-next-game-label">${this._isToday(ng.game_date) ? "Today's Game" : "Next Game"}</div>
         ${this._upcomingTeams(ng.away_logo_url, ng.away_team, ng.home_logo_url, ng.home_team)}
         <div class="ht-next-game-time">${this._fmtGameTime(ng.game_date)}</div>
         ${ng.venue ? html`<div class="ht-next-game-venue">${ng.venue}</div>` : ""}

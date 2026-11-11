@@ -1,6 +1,6 @@
 {
   "name": "ha-hockey-tracker-card",
-  "version": "1.13.0",
+  "version": "1.13.1",
   "description": "Home Assistant Lovelace cards for Hockey Tracker — live scoreboard, game events, recent games and playoff brackets",
   "license": "MIT",
   "type": "module",

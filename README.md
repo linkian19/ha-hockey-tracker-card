@@ -16,7 +16,7 @@ This package includes two card types:
 ### Hockey Tracker Card (`hockey-tracker-card`)
 - Live scoreboard with period and game clock
 - Shots on goal (home and away)
-- State badge in top bar: `LIVE`, `PRE-GAME`, `FINAL`, `NO GAME`
+- State badge in top bar: `LIVE`, `PRE-GAME`, `FINAL`, `NO GAME` — or `GAME DAY` when the next game is later today but not yet within the integration's 3-hour pre-game window
 - Team name title centered in top bar (auto-derived or custom)
 - Configurable team logo size
 - 2-hour post-game window — server-controlled, keeps the final scoreboard visible well after the buzzer
@@ -172,6 +172,7 @@ The card automatically switches between views based on game state:
 | Within 30 min of puck drop (`PRE`) | Full scoreboard layout, no scores yet |
 | More than 30 min before game (`PRE`) | Upcoming matchup with start time |
 | Game just ended (`FINAL`) | Full scoreboard with final scores (stays for up to 2 hours) |
+| `NO_GAME`, next game later today | **Game Day** badge + "Today's Game" preview (the integration switches to `PRE` 3 hours before puck drop) |
 | `NO_GAME` with upcoming game | Next game preview |
 | `NO_GAME` with no upcoming games (off-season, eliminated) | Team logo + "No upcoming games scheduled" |
 | Last Game (history button active) | Previous game's final scoreboard, shots, events, and game link |
