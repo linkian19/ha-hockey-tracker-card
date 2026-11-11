@@ -543,7 +543,7 @@ function Y(e, t, n) {
 	}) : e[t] = n, e;
 }
 // src/hockey-tracker-card.js
-var X = "1.13.0", xe = !customElements.get("hockey-tracker-card");
+var X = "1.13.1", xe = !customElements.get("hockey-tracker-card");
 function Z(e, t) {
 	customElements.get(e) || customElements.define(e, t);
 }
@@ -1227,17 +1227,17 @@ var Ee = class extends q {
 		if (!this.hass || !this.config) return I``;
 		let e = this.hass.states[this.config.entity];
 		if (!e) return I`<ha-card><div class="ht-content">Entity not found: ${this.config.entity}</div></ha-card>`;
-		let t = e.state, n = e.attributes, r = t === "NO_GAME" || t === "PRE", i = this._showLastGame && r, a = i ? "last_game" : this._displayMode(t, n);
+		let t = e.state, n = e.attributes, r = t === "NO_GAME" || t === "PRE", i = this._showLastGame && r, a = i ? "last_game" : this._displayMode(t, n), o = t === "NO_GAME" && this._isToday(n.next_game_date);
 		return I`
       <ha-card>
         <div class="ht-content">
           <div class="ht-header">
-            <span class="ht-badge ${{
+            <span class="ht-badge ${o ? "ht-badge--pre" : {
 			LIVE: "ht-badge--live",
 			PRE: "ht-badge--pre",
 			FINAL: "ht-badge--final",
 			NO_GAME: "ht-badge--none"
-		}[t] ?? "ht-badge--none"}">${{
+		}[t] ?? "ht-badge--none"}">${o ? "Game Day" : {
 			LIVE: "Live",
 			PRE: "Pre-Game",
 			FINAL: "Final",
@@ -1383,7 +1383,7 @@ var Ee = class extends q {
         </div>
       ` : this.config.show_next_game ? e.next_game_date ? I`
       <div class="ht-next-game">
-        <div class="ht-next-game-label">Next Game</div>
+        <div class="ht-next-game-label">${this._isToday(e.next_game_date) ? "Today's Game" : "Next Game"}</div>
         ${this._upcomingTeams(e.next_game_away_logo_url, e.next_game_away_team, e.next_game_home_logo_url, e.next_game_home_team)}
         <div class="ht-next-game-time">${this._fmtGameTime(e.next_game_date)}</div>
         ${e.next_game_venue ? I`<div class="ht-next-game-venue">${e.next_game_venue}</div>` : ""}
@@ -2147,7 +2147,7 @@ Z("hockey-tracker-card", Ee), Z("hockey-playoff-card-editor", class e extends q 
 		let n = t.next_game;
 		return n?.game_date ? I`
       <div class="ht-next-game">
-        <div class="ht-next-game-label">Next Game</div>
+        <div class="ht-next-game-label">${this._isToday(n.game_date) ? "Today's Game" : "Next Game"}</div>
         ${this._upcomingTeams(n.away_logo_url, n.away_team, n.home_logo_url, n.home_team)}
         <div class="ht-next-game-time">${this._fmtGameTime(n.game_date)}</div>
         ${n.venue ? I`<div class="ht-next-game-venue">${n.venue}</div>` : ""}
