@@ -1127,7 +1127,7 @@ class HockeyTrackerCard extends LitElement {
   _isToday(iso) {
     if (!iso) return false;
     try {
-      const { language, timeZone: tz, hour12 } = localeOpts(this.hass);
+      const { language, timeZone: tz } = localeOpts(this.hass);
       const opts = { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" };
       return (
         new Date(iso).toLocaleDateString(language, opts) ===
@@ -1644,7 +1644,7 @@ class HockeyPlayoffCard extends LitElement {
   _isToday(iso) {
     if (!iso) return false;
     try {
-      const { language, timeZone: tz, hour12 } = localeOpts(this.hass);
+      const { language, timeZone: tz } = localeOpts(this.hass);
       const opts = { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" };
       return (
         new Date(iso).toLocaleDateString(language, opts) ===

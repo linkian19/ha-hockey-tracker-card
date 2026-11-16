@@ -1534,13 +1534,13 @@ var Ee = class extends q {
 	_isToday(e) {
 		if (!e) return !1;
 		try {
-			let { language: t, timeZone: n, hour12: r } = Q(this.hass), i = {
+			let { language: t, timeZone: n } = Q(this.hass), r = {
 				timeZone: n,
 				year: "numeric",
 				month: "2-digit",
 				day: "2-digit"
 			};
-			return new Date(e).toLocaleDateString(t, i) === (/* @__PURE__ */ new Date()).toLocaleDateString(t, i);
+			return new Date(e).toLocaleDateString(t, r) === (/* @__PURE__ */ new Date()).toLocaleDateString(t, r);
 		} catch {
 			return new Date(e).toDateString() === (/* @__PURE__ */ new Date()).toDateString();
 		}
@@ -1982,13 +1982,13 @@ Z("hockey-tracker-card", Ee), Z("hockey-playoff-card-editor", class e extends q 
 	_isToday(e) {
 		if (!e) return !1;
 		try {
-			let { language: t, timeZone: n, hour12: r } = Q(this.hass), i = {
+			let { language: t, timeZone: n } = Q(this.hass), r = {
 				timeZone: n,
 				year: "numeric",
 				month: "2-digit",
 				day: "2-digit"
 			};
-			return new Date(e).toLocaleDateString(t, i) === (/* @__PURE__ */ new Date()).toLocaleDateString(t, i);
+			return new Date(e).toLocaleDateString(t, r) === (/* @__PURE__ */ new Date()).toLocaleDateString(t, r);
 		} catch {
 			return new Date(e).toDateString() === (/* @__PURE__ */ new Date()).toDateString();
 		}

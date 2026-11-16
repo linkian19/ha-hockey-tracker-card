@@ -17,4 +17,9 @@ export default defineConfig({
     outDir: "dist",
     emptyOutDir: true,
   },
+  // Vitest renders the cards in a simulated DOM
+  test: {
+    environment: "happy-dom",
+    include: ["tests/**/*.test.js"],
+  },
 });
