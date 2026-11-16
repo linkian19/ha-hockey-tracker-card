@@ -84,10 +84,12 @@ The card source is `src/hockey-tracker-card.js`. Lit is bundled into the release
 
 ```bash
 npm install
+npm run lint    # ESLint
+npm test        # Vitest render tests (tests/) in a simulated DOM
 npm run build   # writes dist/hockey-tracker-card.js
 ```
 
-Commit the rebuilt `dist/` file with your changes — CI fails if it doesn't match the build.
+Commit the rebuilt `dist/` file with your changes — CI fails if it doesn't match the build. Every push runs lint, tests, the build check and HACS validation.
 
 ---
 
