@@ -69,6 +69,40 @@ function onActivateKey(handler) {
   };
 }
 
+// Disallowed goals (integration v1.13.0+) arrive in their own attribute so older
+// cards don't render them as penalties. Merge them into the event list, newest first.
+function eventSortValue(e) {
+  const [m, sec] = String(e.time || "0:00").split(":").map(Number);
+  return (Number(e.period) || 0) * 10000 + (m || 0) * 60 + (sec || 0);
+}
+
+function withDisallowed(events, disallowed, config) {
+  const list = events || [];
+  if (config.show_event_disallowed === false || !disallowed?.length) return list;
+  return [...list, ...disallowed.map((d) => ({ ...d, type: "goal_disallowed" }))]
+    .sort((a, b) => eventSortValue(b) - eventSortValue(a));
+}
+
+function disallowedReason(e) {
+  const reason = e.reason ? e.reason.charAt(0).toUpperCase() + e.reason.slice(1) : "";
+  if (e.challenged_by === "league") return reason ? `League review: ${reason}` : "League review";
+  if (e.challenged_by) return reason ? `${e.challenged_by} challenge: ${reason}` : `${e.challenged_by} challenge`;
+  return reason || "Taken off the board";
+}
+
+function disallowedRow(e, meta) {
+  return html`
+    <div class="ht-event-row ht-event-disallowed ${e.is_tracked_team ? "ht-event--ours" : ""}">
+      <span class="ht-event-dot"></span>
+      <span class="ht-event-meta">${meta}</span>
+      <span class="ht-event-abbrev">${e.team_abbrev}</span>
+      <span class="ht-event-body">
+        <span class="ht-event-disallowed-name">${e.player_number != null ? `#${e.player_number} ` : ""}${e.player_name}</span><span class="ht-event-tag ht-event-tag--disallowed">NO GOAL</span><span class="ht-event-assists"> · ${disallowedReason(e)}</span>
+      </span>
+    </div>
+  `;
+}
+
 function fireConfigChanged(el, config) {
   el.dispatchEvent(new CustomEvent("config-changed", {
     detail: { config }, bubbles: true, composed: true,
@@ -112,6 +146,7 @@ class HockeyTrackerCardEditor extends LitElement {
       collapsible_events: true,
       show_event_goals: true,
       show_event_penalties: true,
+      show_event_disallowed: true,
       show_event_shots: true,
       logo_size: 64,
       show_last_updated: true,
@@ -144,6 +179,7 @@ class HockeyTrackerCardEditor extends LitElement {
       { name: "collapsible_events", selector: { boolean: {} } },
       { name: "show_event_goals", selector: { boolean: {} } },
       { name: "show_event_penalties", selector: { boolean: {} } },
+      { name: "show_event_disallowed", selector: { boolean: {} } },
       { name: "show_event_shots", selector: { boolean: {} } },
       {
         name: "logo_size",
@@ -170,6 +206,7 @@ class HockeyTrackerCardEditor extends LitElement {
       collapsible_events:   "Allow game events section to be collapsed",
       show_event_goals:     "Show goal events in ticker",
       show_event_penalties: "Show penalty events in ticker",
+      show_event_disallowed: "Show disallowed goals in ticker",
       show_event_shots:     "Show shot events in ticker (NHL only)",
       logo_size:            "Logo size in px (24–200, default: 64)",
     }[schema.name] ?? schema.name;
@@ -483,6 +520,13 @@ class HockeyTrackerCard extends LitElement {
       .ht-event-goal .ht-event-dot    { background: #388e3c; }
       .ht-event-penalty .ht-event-dot { background: #e65100; }
       .ht-event-shot .ht-event-dot    { background: #0288d1; }
+      .ht-event-disallowed .ht-event-dot {
+        background: transparent;
+        border: 2px solid #388e3c;
+        box-sizing: border-box;
+      }
+      .ht-event-disallowed-name { text-decoration: line-through; }
+      .ht-event-tag--disallowed { background: var(--error-color, #db4437); }
       .ht-event-meta {
         color: var(--secondary-text-color);
         font-size: 0.72rem;
@@ -630,6 +674,7 @@ class HockeyTrackerCard extends LitElement {
       collapsible_events: true,
       show_event_goals: true,
       show_event_penalties: true,
+      show_event_disallowed: true,
       show_event_shots: true,
       logo_size: 64,
       show_last_updated: true,
@@ -651,6 +696,7 @@ class HockeyTrackerCard extends LitElement {
       collapsible_events: true,
       show_event_goals: true,
       show_event_penalties: true,
+      show_event_disallowed: true,
       show_event_shots: true,
       logo_size: 64,
       show_last_updated: true,
@@ -730,6 +776,7 @@ class HockeyTrackerCard extends LitElement {
 
     const state = stateObj.state;
     const a = stateObj.attributes;
+    const gameEvents = withDisallowed(a.game_events, a.disallowed_goals, this.config);
 
     // History button only makes sense when there's no active game to watch
     const canShowHistory = state === "NO_GAME" || state === "PRE";
@@ -777,8 +824,8 @@ class HockeyTrackerCard extends LitElement {
           ${this.config.show_events
             ? mode === "last_game" && a.last_game_events?.length
               ? this._renderGameEvents(a.last_game_events)
-              : mode === "game" && a.game_events?.length
-              ? this._renderGameEvents(a.game_events)
+              : mode === "game" && gameEvents.length
+              ? this._renderGameEvents(gameEvents)
               : ""
             : ""}
 
@@ -976,6 +1023,7 @@ class HockeyTrackerCard extends LitElement {
       if (e.type === "goal" && this.config.show_event_goals === false) return false;
       if (e.type === "penalty" && this.config.show_event_penalties === false) return false;
       if (e.type === "shot" && this.config.show_event_shots === false) return false;
+      if (e.type === "goal_disallowed" && this.config.show_event_disallowed === false) return false;
       return true;
     });
     const count = Math.min(this.config.events_count || 10, visible.length);
@@ -1000,8 +1048,10 @@ class HockeyTrackerCard extends LitElement {
         </div>
         ${!collapsed ? visible.slice(0, count).map(e =>
           e.type === "goal" ? this._renderGoal(e) :
+          e.type === "goal_disallowed" ? disallowedRow(e, `P${e.period} · ${e.time}`) :
           e.type === "shot" ? this._renderShot(e) :
-          this._renderPenalty(e)
+          e.type === "penalty" ? this._renderPenalty(e) :
+          ""
         ) : ""}
       </div>
     `;
@@ -1215,6 +1265,7 @@ class HockeyPlayoffCardEditor extends LitElement {
       collapsible_events: true,
       show_event_goals: true,
       show_event_penalties: true,
+      show_event_disallowed: true,
       show_event_shots: true,
       show_last_updated: true,
       ...config,
@@ -1242,6 +1293,7 @@ class HockeyPlayoffCardEditor extends LitElement {
       { name: "collapsible_events", selector: { boolean: {} } },
       { name: "show_event_goals", selector: { boolean: {} } },
       { name: "show_event_penalties", selector: { boolean: {} } },
+      { name: "show_event_disallowed", selector: { boolean: {} } },
       { name: "show_event_shots", selector: { boolean: {} } },
       { name: "show_last_updated", selector: { boolean: {} } },
     ];
@@ -1260,6 +1312,7 @@ class HockeyPlayoffCardEditor extends LitElement {
       collapsible_events:   "Allow game events section to be collapsed",
       show_event_goals:     "Show goal events in ticker",
       show_event_penalties: "Show penalty events in ticker",
+      show_event_disallowed: "Show disallowed goals in ticker",
       show_event_shots:     "Show shot events in ticker (NHL only)",
       show_last_updated:  "Show time since last data refresh",
     }[schema.name] ?? schema.name;
@@ -1391,6 +1444,7 @@ class HockeyPlayoffCard extends LitElement {
       collapsible_events: true,
       show_event_goals: true,
       show_event_penalties: true,
+      show_event_disallowed: true,
       show_event_shots: true,
       show_last_updated: true,
       ...config,
@@ -1963,10 +2017,12 @@ class HockeyPlayoffCard extends LitElement {
 
   _renderPlayoffEvents(attr, isActive) {
     if (!this.config.show_events || !isActive) return html``;
-    const visible = (attr.game_events || []).filter(e => {
+    const visible = withDisallowed(attr.game_events, attr.disallowed_goals, this.config).filter(e => {
       if (e.type === "goal" && this.config.show_event_goals === false) return false;
       if (e.type === "penalty" && this.config.show_event_penalties === false) return false;
       if (e.type === "shot" && this.config.show_event_shots === false) return false;
+      if (e.type === "goal_disallowed" && this.config.show_event_disallowed === false) return false;
+      if (!["goal", "goal_disallowed", "penalty", "shot"].includes(e.type)) return false;
       return true;
     }).slice(0, this.config.events_count || 10);
     if (!visible.length) return html``;
@@ -1992,6 +2048,7 @@ class HockeyPlayoffCard extends LitElement {
           ` : ""}
         </div>
         ${!collapsed ? visible.map((e) => {
+          if (e.type === "goal_disallowed") return disallowedRow(e, `P${e.period} ${e.time}`);
           const typeClass = e.type === "goal" ? "ht-event-goal" : e.type === "shot" ? "ht-event-shot" : "ht-event-penalty";
           return html`
             <div class="ht-event-row ${typeClass} ${e.is_tracked_team ? "ht-event--ours" : ""}">

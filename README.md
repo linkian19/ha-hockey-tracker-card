@@ -26,6 +26,7 @@ This package includes two card types:
 - Team logo displayed during off-season / no upcoming games
 - **Last Game history toggle** — when no game is active (`NO_GAME` or `PRE`), a history button (🕐) appears in the header to show the previous game's final scoreboard, shots, venue, event feed, and a link to the game summary. Data is auto-populated after HA restarts; a "Load Last Game" button re-fetches it on demand if needed.
 - Optional live game events feed (goals & penalties with PP/SH/EN badges; shots on goal shown as `SOG: <player name>`)
+- Disallowed goals in the events feed — struck through with a **NO GOAL** badge and the reason (e.g. "DAL challenge: Offside"; "Taken off the board" for HockeyTech leagues). Toggle with `show_event_disallowed`; needs integration v1.13.0+
 - Optional recent game results list (W/L, score, opponent, date) — rows link to official game summaries
 - Full UI editor — no YAML required
 - Named CSS classes for styling with [card-mod](https://github.com/thomasloven/lovelace-card-mod)
@@ -38,6 +39,7 @@ This package includes two card types:
 - **"W" column header** on each series card so win counts are clearly distinct from live game scores
 - **Click any series** to drill into a series detail view — "Series" standings heading, team names with win counts (leader highlighted), then a full game section mirroring the team tracker card
 - Bracket button (🏒) in header always returns to the full bracket
+- Game events in the series view include disallowed goals, same as the team card (`show_event_disallowed`)
 - Rounds auto-collapse to focus on the current round — click any round header to expand/collapse
 - Title auto-displays the league cup name (e.g. "Stanley Cup Playoffs", "Calder Cup Playoffs", "Kelly Cup Playoffs") — override with a custom `title` option
 - Header shows a pulsing **LIVE** badge during active games; a hockey puck icon is shown otherwise (no badge for PRE, FINAL, or NO GAME)
@@ -141,6 +143,7 @@ entity: sensor.nhl_playoffs_col_edm_1
 | `show_events` | boolean | `false` | Show live game events (goals & penalties) during active games |
 | `events_count` | number | `10` | Number of events to display (3–25) |
 | `collapsible_events` | boolean | `true` | Show a collapse toggle on the Game Events section |
+| `show_event_disallowed` | boolean | `true` | Show disallowed goals in the events list (struck through, with a **NO GOAL** tag and the reason). Requires Hockey Tracker integration v1.13.0+ |
 
 ### Example
 
@@ -205,6 +208,7 @@ Notification alerts (win, pre-game, goal) are configured in the **integration**,
 | `show_events` | boolean | `true` | Show live game events (goals & penalties) in game view |
 | `events_count` | number | `10` | Number of events to display (3–25) |
 | `collapsible_events` | boolean | `true` | Show a collapse toggle on the Game Events section |
+| `show_event_disallowed` | boolean | `true` | Show disallowed goals in the events list (struck through, with a **NO GOAL** tag and the reason). Requires Hockey Tracker integration v1.13.0+ |
 
 ### Example
 
@@ -312,6 +316,9 @@ All elements in the `hockey-tracker-card` have stable `ht-` prefixed CSS class n
 | `.ht-event-row` | Individual event row |
 | `.ht-event-goal` | Modifier on goal rows |
 | `.ht-event-penalty` | Modifier on penalty rows |
+| `.ht-event-disallowed` | Modifier on disallowed goal rows (hollow green dot) |
+| `.ht-event-disallowed-name` | Struck-through scorer name on a disallowed goal |
+| `.ht-event-tag--disallowed` | **NO GOAL** badge on disallowed goals |
 | `.ht-event--ours` | Modifier when event involves the tracked team |
 | `.ht-event-dot` | Colored dot indicator (green=goal, orange=penalty) |
 | `.ht-event-meta` | Period and time label |
