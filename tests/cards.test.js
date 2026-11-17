@@ -2,6 +2,7 @@
  * Render tests: each card is created in a simulated DOM with a fake `hass`
  * object, then the rendered shadow DOM is checked.
  */
+import { render as litRender } from "lit";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 beforeAll(async () => {
@@ -122,6 +123,50 @@ describe("hockey-tracker-card", () => {
     expect(callService.mock.calls[1][2]).toEqual({ entity_id: ENTITY });
   });
 
+  const liveEvents = {
+    home_score: 1, away_score: 0, period: 2, clock: "12:00",
+    game_events: [
+      // Newest first, as the integration sends them
+      { type: "mystery", period: 2, time: "2:00", team_abbrev: "TUL" },
+      { type: "penalty", period: 2, time: "1:10", team_abbrev: "TUL", player_name: "Sam Lipkin",
+        description: "Fighting - Major", minutes: 5, incident: "fight" },
+      { type: "goal", period: 1, time: "5:00", team_abbrev: "KC", is_tracked_team: true, player_name: "Kyle Kukkonen" },
+    ],
+    disallowed_goals: [
+      { type: "goal_disallowed", period: 1, time: "16:28", team_abbrev: "TUL", is_tracked_team: false,
+        player_name: "Nick Nardella", reason: "offside", challenged_by: "KC" },
+    ],
+  };
+
+  it("shows disallowed goals in time order and skips unknown event types", async () => {
+    const el = await render("hockey-tracker-card", { entity: ENTITY, show_events: true },
+      makeHass(gameState("LIVE", liveEvents)));
+    expect(all(el, ".ht-event-meta")).toEqual(["P2 · 1:10", "P1 · 16:28", "P1 · 5:00"]);
+    const row = el.shadowRoot.querySelector(".ht-event-disallowed");
+    expect(row.querySelector(".ht-event-disallowed-name").textContent.trim()).toBe("Nick Nardella");
+    expect(row.querySelector(".ht-event-tag--disallowed").textContent).toBe("NO GOAL");
+    expect(row.textContent).toContain("KC challenge: Offside");
+  });
+
+  it("hides disallowed goals when show_event_disallowed is off", async () => {
+    const el = await render("hockey-tracker-card",
+      { entity: ENTITY, show_events: true, show_event_disallowed: false },
+      makeHass(gameState("LIVE", liveEvents)));
+    expect(el.shadowRoot.querySelector(".ht-event-disallowed")).toBeNull();
+    expect(all(el, ".ht-event-meta")).toEqual(["P2 · 1:10", "P1 · 5:00"]);
+  });
+
+  it("labels HockeyTech disallowed goals without a reason", async () => {
+    const el = await render("hockey-tracker-card", { entity: ENTITY, show_events: true },
+      makeHass(gameState("LIVE", {
+        ...liveEvents,
+        disallowed_goals: [{ period: 3, time: "3:04", team_abbrev: "KC", is_tracked_team: true,
+          player_name: "Jake Smith", reason: null, challenged_by: null }],
+      })));
+    expect(text(el, ".ht-event-disallowed")).toContain("Taken off the board");
+    expect(el.shadowRoot.querySelector(".ht-event-disallowed.ht-event--ours")).not.toBeNull();
+  });
+
   it("picks team vs playoff sensors for the stub config", () => {
     const hass = makeHass({
       ...gameState("NO_GAME"),
@@ -166,6 +211,24 @@ describe("hockey-playoff-card", () => {
     expect(text(el, ".hp-title")).toBe("Kelly Cup Playoffs");
     expect(text(el, ".hp-badge")).toBe("LIVE");
     expect(el.shadowRoot.textContent).toContain("No playoff data available.");
+  });
+
+  it("shows disallowed goals in the game view events", async () => {
+    const el = await render("hockey-playoff-card", { entity: PLAYOFF }, playoffHass({ bracket: [] }));
+    const attr = {
+      game_events: [{ type: "goal", period: 2, time: "4:00", team_abbrev: "STL", player_name: "A" }],
+      disallowed_goals: [{ period: 1, time: "16:28", team_abbrev: "STL", player_name: "B",
+        reason: "goaltender interference", challenged_by: "league" }],
+    };
+    const host = document.createElement("div");
+    litRender(el._renderPlayoffEvents(attr, true), host);
+    expect([...host.querySelectorAll(".ht-event-meta")].map((n) => n.textContent)).toEqual(["P2 4:00", "P1 16:28"]);
+    expect(host.querySelector(".ht-event-disallowed").textContent).toContain("League review: Goaltender interference");
+
+    el.setConfig({ entity: PLAYOFF, show_event_disallowed: false });
+    const hidden = document.createElement("div");
+    litRender(el._renderPlayoffEvents(attr, true), hidden);
+    expect(hidden.querySelector(".ht-event-disallowed")).toBeNull();
   });
 
   it("collapses finished rounds and shows the live series", async () => {

@@ -29,11 +29,11 @@ var e = globalThis, t = e.ShadowRoot && (e.ShadyCSS === void 0 || e.ShadyCSS.nat
 	let t = "";
 	for (let n of e.cssRules) t += n.cssText;
 	return a(t);
-})(e) : e, l, { is: u, defineProperty: d, getOwnPropertyDescriptor: ee, getOwnPropertyNames: te, getOwnPropertySymbols: ne, getPrototypeOf: re } = Object, f = globalThis, ie = f.trustedTypes, ae = ie ? ie.emptyScript : "", oe = f.reactiveElementPolyfillSupport, p = (e, t) => e, m = {
+})(e) : e, l, { is: u, defineProperty: d, getOwnPropertyDescriptor: ee, getOwnPropertyNames: te, getOwnPropertySymbols: ne, getPrototypeOf: re } = Object, f = globalThis, p = f.trustedTypes, ie = p ? p.emptyScript : "", ae = f.reactiveElementPolyfillSupport, m = (e, t) => e, h = {
 	toAttribute(e, t) {
 		switch (t) {
 			case Boolean:
-				e = e ? ae : null;
+				e = e ? ie : null;
 				break;
 			case Object:
 			case Array: e = e == null ? e : JSON.stringify(e);
@@ -58,23 +58,23 @@ var e = globalThis, t = e.ShadowRoot && (e.ShadyCSS === void 0 || e.ShadyCSS.nat
 		}
 		return n;
 	}
-}, h = (e, t) => !u(e, t), g = {
+}, g = (e, t) => !u(e, t), _ = {
 	attribute: !0,
 	type: String,
-	converter: m,
+	converter: h,
 	reflect: !1,
 	useDefault: !1,
-	hasChanged: h
+	hasChanged: g
 };
 (l = Symbol).metadata ?? (l.metadata = Symbol("metadata")), f.litPropertyMetadata ?? (f.litPropertyMetadata = /* @__PURE__ */ new WeakMap());
-var _ = class extends HTMLElement {
+var v = class extends HTMLElement {
 	static addInitializer(e) {
 		this._$Ei(), (this.l ?? (this.l = [])).push(e);
 	}
 	static get observedAttributes() {
 		return this.finalize(), this._$Eh && [...this._$Eh.keys()];
 	}
-	static createProperty(e, t = g) {
+	static createProperty(e, t = _) {
 		if (t.state && (t.attribute = !1), this._$Ei(), this.prototype.hasOwnProperty(e) && ((t = Object.create(t)).wrapped = !0), this.elementProperties.set(e, t), !t.noAccessor) {
 			let n = Symbol(), r = this.getPropertyDescriptor(e, n, t);
 			r !== void 0 && d(this.prototype, e, r);
@@ -100,16 +100,16 @@ var _ = class extends HTMLElement {
 		};
 	}
 	static getPropertyOptions(e) {
-		return this.elementProperties.get(e) ?? g;
+		return this.elementProperties.get(e) ?? _;
 	}
 	static _$Ei() {
-		if (this.hasOwnProperty(p("elementProperties"))) return;
+		if (this.hasOwnProperty(m("elementProperties"))) return;
 		let e = re(this);
 		e.finalize(), e.l !== void 0 && (this.l = [...e.l]), this.elementProperties = new Map(e.elementProperties);
 	}
 	static finalize() {
-		if (this.hasOwnProperty(p("finalized"))) return;
-		if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(p("properties"))) {
+		if (this.hasOwnProperty(m("finalized"))) return;
+		if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(m("properties"))) {
 			let e = this.properties, t = [...te(e), ...ne(e)];
 			for (let n of t) this.createProperty(n, e[n]);
 		}
@@ -171,14 +171,14 @@ var _ = class extends HTMLElement {
 	_$ET(e, t) {
 		let n = this.constructor.elementProperties.get(e), r = this.constructor._$Eu(e, n);
 		if (r !== void 0 && !0 === n.reflect) {
-			let i = (n.converter?.toAttribute === void 0 ? m : n.converter).toAttribute(t, n.type);
+			let i = (n.converter?.toAttribute === void 0 ? h : n.converter).toAttribute(t, n.type);
 			this._$Em = e, i == null ? this.removeAttribute(r) : this.setAttribute(r, i), this._$Em = null;
 		}
 	}
 	_$AK(e, t) {
 		let n = this.constructor, r = n._$Eh.get(e);
 		if (r !== void 0 && this._$Em !== r) {
-			let e = n.getPropertyOptions(r), i = typeof e.converter == "function" ? { fromAttribute: e.converter } : e.converter?.fromAttribute === void 0 ? m : e.converter;
+			let e = n.getPropertyOptions(r), i = typeof e.converter == "function" ? { fromAttribute: e.converter } : e.converter?.fromAttribute === void 0 ? h : e.converter;
 			this._$Em = r;
 			let a = i.fromAttribute(t, e.type);
 			this[r] = a ?? this._$Ej?.get(r) ?? a, this._$Em = null;
@@ -187,7 +187,7 @@ var _ = class extends HTMLElement {
 	requestUpdate(e, t, n, r = !1, i) {
 		if (e !== void 0) {
 			let a = this.constructor;
-			if (!1 === r && (i = this[e]), n ?? (n = a.getPropertyOptions(e)), !((n.hasChanged ?? h)(i, t) || n.useDefault && n.reflect && i === this._$Ej?.get(e) && !this.hasAttribute(a._$Eu(e, n)))) return;
+			if (!1 === r && (i = this[e]), n ?? (n = a.getPropertyOptions(e)), !((n.hasChanged ?? g)(i, t) || n.useDefault && n.reflect && i === this._$Ej?.get(e) && !this.hasAttribute(a._$Eu(e, n)))) return;
 			this.C(e, t, n);
 		}
 		!1 === this.isUpdatePending && (this._$ES = this._$EP());
@@ -251,24 +251,24 @@ var _ = class extends HTMLElement {
 	updated(e) {}
 	firstUpdated(e) {}
 };
-_.elementStyles = [], _.shadowRootOptions = { mode: "open" }, _[p("elementProperties")] = /* @__PURE__ */ new Map(), _[p("finalized")] = /* @__PURE__ */ new Map(), oe?.({ ReactiveElement: _ }), (f.reactiveElementVersions ?? (f.reactiveElementVersions = [])).push("2.1.2");
+v.elementStyles = [], v.shadowRootOptions = { mode: "open" }, v[m("elementProperties")] = /* @__PURE__ */ new Map(), v[m("finalized")] = /* @__PURE__ */ new Map(), ae?.({ ReactiveElement: v }), (f.reactiveElementVersions ?? (f.reactiveElementVersions = [])).push("2.1.2");
 // node_modules/lit-html/lit-html.js
-var v = globalThis, y = (e) => e, b = v.trustedTypes, x = b ? b.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, S = "$lit$", C = `lit$${Math.random().toFixed(9).slice(2)}$`, se = "?" + C, ce = `<${se}>`, w = document, T = () => w.createComment(""), E = (e) => e === null || typeof e != "object" && typeof e != "function", D = Array.isArray, le = (e) => D(e) || typeof e?.[Symbol.iterator] == "function", O = "[ 	\n\f\r]", k = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, A = /-->/g, j = />/g, M = RegExp(`>|${O}(?:([^\\s"'>=/]+)(${O}*=${O}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), N = /'/g, P = /"/g, F = /^(?:script|style|textarea|title)$/i, I = ((e) => (t, ...n) => ({
+var y = globalThis, b = (e) => e, x = y.trustedTypes, S = x ? x.createPolicy("lit-html", { createHTML: (e) => e }) : void 0, C = "$lit$", w = `lit$${Math.random().toFixed(9).slice(2)}$`, T = "?" + w, oe = `<${T}>`, E = document, D = () => E.createComment(""), O = (e) => e === null || typeof e != "object" && typeof e != "function", k = Array.isArray, se = (e) => k(e) || typeof e?.[Symbol.iterator] == "function", A = "[ 	\n\f\r]", j = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, M = /-->/g, ce = />/g, N = RegExp(`>|${A}(?:([^\\s"'>=/]+)(${A}*=${A}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`, "g"), le = /'/g, P = /"/g, F = /^(?:script|style|textarea|title)$/i, I = ((e) => (t, ...n) => ({
 	_$litType$: e,
 	strings: t,
 	values: n
-}))(1), L = Symbol.for("lit-noChange"), R = Symbol.for("lit-nothing"), z = /* @__PURE__ */ new WeakMap(), B = w.createTreeWalker(w, 129);
+}))(1), L = Symbol.for("lit-noChange"), R = Symbol.for("lit-nothing"), z = /* @__PURE__ */ new WeakMap(), B = E.createTreeWalker(E, 129);
 function V(e, t) {
-	if (!D(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
-	return x === void 0 ? t : x.createHTML(t);
+	if (!k(e) || !e.hasOwnProperty("raw")) throw Error("invalid template strings array");
+	return S === void 0 ? t : S.createHTML(t);
 }
 var ue = (e, t) => {
-	let n = e.length - 1, r = [], i, a = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", o = k;
+	let n = e.length - 1, r = [], i, a = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", o = j;
 	for (let t = 0; t < n; t++) {
 		let n = e[t], s, c, l = -1, u = 0;
-		for (; u < n.length && (o.lastIndex = u, c = o.exec(n), c !== null);) u = o.lastIndex, o === k ? c[1] === "!--" ? o = A : c[1] === void 0 ? c[2] === void 0 ? c[3] !== void 0 && (o = M) : (F.test(c[2]) && (i = RegExp("</" + c[2], "g")), o = M) : o = j : o === M ? c[0] === ">" ? (o = i ?? k, l = -1) : c[1] === void 0 ? l = -2 : (l = o.lastIndex - c[2].length, s = c[1], o = c[3] === void 0 ? M : c[3] === "\"" ? P : N) : o === P || o === N ? o = M : o === A || o === j ? o = k : (o = M, i = void 0);
-		let d = o === M && e[t + 1].startsWith("/>") ? " " : "";
-		a += o === k ? n + ce : l >= 0 ? (r.push(s), n.slice(0, l) + S + n.slice(l) + C + d) : n + C + (l === -2 ? t : d);
+		for (; u < n.length && (o.lastIndex = u, c = o.exec(n), c !== null);) u = o.lastIndex, o === j ? c[1] === "!--" ? o = M : c[1] === void 0 ? c[2] === void 0 ? c[3] !== void 0 && (o = N) : (F.test(c[2]) && (i = RegExp("</" + c[2], "g")), o = N) : o = ce : o === N ? c[0] === ">" ? (o = i ?? j, l = -1) : c[1] === void 0 ? l = -2 : (l = o.lastIndex - c[2].length, s = c[1], o = c[3] === void 0 ? N : c[3] === "\"" ? P : le) : o === P || o === le ? o = N : o === M || o === ce ? o = j : (o = N, i = void 0);
+		let d = o === N && e[t + 1].startsWith("/>") ? " " : "";
+		a += o === j ? n + oe : l >= 0 ? (r.push(s), n.slice(0, l) + C + n.slice(l) + w + d) : n + w + (l === -2 ? t : d);
 	}
 	return [V(e, a + (e[n] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), r];
 }, H = class e {
@@ -282,8 +282,8 @@ var ue = (e, t) => {
 		}
 		for (; (i = B.nextNode()) !== null && c.length < s;) {
 			if (i.nodeType === 1) {
-				if (i.hasAttributes()) for (let e of i.getAttributeNames()) if (e.endsWith(S)) {
-					let t = u[o++], n = i.getAttribute(e).split(C), r = /([.?@])?(.*)/.exec(t);
+				if (i.hasAttributes()) for (let e of i.getAttributeNames()) if (e.endsWith(C)) {
+					let t = u[o++], n = i.getAttribute(e).split(w), r = /([.?@])?(.*)/.exec(t);
 					c.push({
 						type: 1,
 						index: a,
@@ -291,45 +291,45 @@ var ue = (e, t) => {
 						strings: n,
 						ctor: r[1] === "." ? fe : r[1] === "?" ? pe : r[1] === "@" ? me : G
 					}), i.removeAttribute(e);
-				} else e.startsWith(C) && (c.push({
+				} else e.startsWith(w) && (c.push({
 					type: 6,
 					index: a
 				}), i.removeAttribute(e));
 				if (F.test(i.tagName)) {
-					let e = i.textContent.split(C), t = e.length - 1;
+					let e = i.textContent.split(w), t = e.length - 1;
 					if (t > 0) {
-						i.textContent = b ? b.emptyScript : "";
-						for (let n = 0; n < t; n++) i.append(e[n], T()), B.nextNode(), c.push({
+						i.textContent = x ? x.emptyScript : "";
+						for (let n = 0; n < t; n++) i.append(e[n], D()), B.nextNode(), c.push({
 							type: 2,
 							index: ++a
 						});
-						i.append(e[t], T());
+						i.append(e[t], D());
 					}
 				}
 			} else if (i.nodeType === 8) {
-				if (i.data === se) c.push({
+				if (i.data === T) c.push({
 					type: 2,
 					index: a
 				});
 				else {
 					let e = -1;
-					for (; (e = i.data.indexOf(C, e + 1)) !== -1;) c.push({
+					for (; (e = i.data.indexOf(w, e + 1)) !== -1;) c.push({
 						type: 7,
 						index: a
-					}), e += C.length - 1;
+					}), e += w.length - 1;
 				}
 			}
 			a++;
 		}
 	}
 	static createElement(e, t) {
-		let n = w.createElement("template");
+		let n = E.createElement("template");
 		return n.innerHTML = e, n;
 	}
 };
 function U(e, t, n = e, r) {
 	if (t === L) return t;
-	let i = r === void 0 ? n._$Cl : n._$Co?.[r], a = E(t) ? void 0 : t._$litDirective$;
+	let i = r === void 0 ? n._$Cl : n._$Co?.[r], a = O(t) ? void 0 : t._$litDirective$;
 	return i?.constructor !== a && (i?._$AO?.(!1), a === void 0 ? i = void 0 : (i = new a(e), i._$AT(e, n, r)), r === void 0 ? n._$Cl = i : (n._$Co ?? (n._$Co = []))[r] = i), i !== void 0 && (t = U(e, i._$AS(e, t.values), i, r)), t;
 }
 var de = class {
@@ -343,7 +343,7 @@ var de = class {
 		return this._$AM._$AU;
 	}
 	u(e) {
-		let { el: { content: t }, parts: n } = this._$AD, r = (e?.creationScope ?? w).importNode(t, !0);
+		let { el: { content: t }, parts: n } = this._$AD, r = (e?.creationScope ?? E).importNode(t, !0);
 		B.currentNode = r;
 		let i = B.nextNode(), a = 0, o = 0, s = n[0];
 		for (; s !== void 0;) {
@@ -353,7 +353,7 @@ var de = class {
 			}
 			a !== s?.index && (i = B.nextNode(), a++);
 		}
-		return B.currentNode = w, r;
+		return B.currentNode = E, r;
 	}
 	p(e) {
 		let t = 0;
@@ -377,7 +377,7 @@ var de = class {
 		return this._$AB;
 	}
 	_$AI(e, t = this) {
-		e = U(this, e, t), E(e) ? e === R || e == null || e === "" ? (this._$AH !== R && this._$AR(), this._$AH = R) : e !== this._$AH && e !== L && this._(e) : e._$litType$ === void 0 ? e.nodeType === void 0 ? le(e) ? this.k(e) : this._(e) : this.T(e) : this.$(e);
+		e = U(this, e, t), O(e) ? e === R || e == null || e === "" ? (this._$AH !== R && this._$AR(), this._$AH = R) : e !== this._$AH && e !== L && this._(e) : e._$litType$ === void 0 ? e.nodeType === void 0 ? se(e) ? this.k(e) : this._(e) : this.T(e) : this.$(e);
 	}
 	O(e) {
 		return this._$AA.parentNode.insertBefore(e, this._$AB);
@@ -386,7 +386,7 @@ var de = class {
 		this._$AH !== e && (this._$AR(), this._$AH = this.O(e));
 	}
 	_(e) {
-		this._$AH !== R && E(this._$AH) ? this._$AA.nextSibling.data = e : this.T(w.createTextNode(e)), this._$AH = e;
+		this._$AH !== R && O(this._$AH) ? this._$AA.nextSibling.data = e : this.T(E.createTextNode(e)), this._$AH = e;
 	}
 	$(e) {
 		let { values: t, _$litType$: n } = e, r = typeof n == "number" ? this._$AC(e) : (n.el === void 0 && (n.el = H.createElement(V(n.h, n.h[0]), this.options)), n);
@@ -401,15 +401,15 @@ var de = class {
 		return t === void 0 && z.set(e.strings, t = new H(e)), t;
 	}
 	k(t) {
-		D(this._$AH) || (this._$AH = [], this._$AR());
+		k(this._$AH) || (this._$AH = [], this._$AR());
 		let n = this._$AH, r, i = 0;
-		for (let a of t) i === n.length ? n.push(r = new e(this.O(T()), this.O(T()), this, this.options)) : r = n[i], r._$AI(a), i++;
+		for (let a of t) i === n.length ? n.push(r = new e(this.O(D()), this.O(D()), this, this.options)) : r = n[i], r._$AI(a), i++;
 		i < n.length && (this._$AR(r && r._$AB.nextSibling, i), n.length = i);
 	}
 	_$AR(e = this._$AA.nextSibling, t) {
 		for (this._$AP?.(!1, !0, t); e !== this._$AB;) {
-			let t = y(e).nextSibling;
-			y(e).remove(), e = t;
+			let t = b(e).nextSibling;
+			b(e).remove(), e = t;
 		}
 	}
 	setConnected(e) {
@@ -427,10 +427,10 @@ var de = class {
 	}
 	_$AI(e, t = this, n, r) {
 		let i = this.strings, a = !1;
-		if (i === void 0) e = U(this, e, t, 0), a = !E(e) || e !== this._$AH && e !== L, a && (this._$AH = e);
+		if (i === void 0) e = U(this, e, t, 0), a = !O(e) || e !== this._$AH && e !== L, a && (this._$AH = e);
 		else {
 			let r = e, o, s;
-			for (e = i[0], o = 0; o < i.length - 1; o++) s = U(this, r[n + o], t, o), s === L && (s = this._$AH[o]), a || (a = !E(s) || s !== this._$AH[o]), s === R ? e = R : e !== R && (e += (s ?? "") + i[o + 1]), this._$AH[o] = s;
+			for (e = i[0], o = 0; o < i.length - 1; o++) s = U(this, r[n + o], t, o), s === L && (s = this._$AH[o]), a || (a = !O(s) || s !== this._$AH[o]), s === R ? e = R : e !== R && (e += (s ?? "") + i[o + 1]), this._$AH[o] = s;
 		}
 		a && !r && this.j(e);
 	}
@@ -473,16 +473,16 @@ var de = class {
 	_$AI(e) {
 		U(this, e);
 	}
-}, ge = v.litHtmlPolyfillSupport;
-ge?.(H, W), (v.litHtmlVersions ?? (v.litHtmlVersions = [])).push("3.3.3");
+}, ge = y.litHtmlPolyfillSupport;
+ge?.(H, W), (y.litHtmlVersions ?? (y.litHtmlVersions = [])).push("3.3.3");
 var _e = (e, t, n) => {
 	let r = n?.renderBefore ?? t, i = r._$litPart$;
 	if (i === void 0) {
 		let e = n?.renderBefore ?? null;
-		r._$litPart$ = i = new W(t.insertBefore(T(), e), e, void 0, n ?? {});
+		r._$litPart$ = i = new W(t.insertBefore(D(), e), e, void 0, n ?? {});
 	}
 	return i._$AI(e), i;
-}, K = globalThis, q = class extends _ {
+}, K = globalThis, q = class extends v {
 	constructor() {
 		super(...arguments), this.renderOptions = { host: this }, this._$Do = void 0;
 	}
@@ -543,7 +543,7 @@ function Y(e, t, n) {
 	}) : e[t] = n, e;
 }
 // src/hockey-tracker-card.js
-var X = "1.13.1", xe = !customElements.get("hockey-tracker-card");
+var X = "1.14.0", xe = !customElements.get("hockey-tracker-card");
 function Z(e, t) {
 	customElements.get(e) || customElements.define(e, t);
 }
@@ -570,14 +570,41 @@ function $(e) {
 		(t.key === "Enter" || t.key === " ") && (t.preventDefault(), e(t));
 	};
 }
-function we(e, t) {
+function we(e) {
+	let [t, n] = String(e.time || "0:00").split(":").map(Number);
+	return (Number(e.period) || 0) * 1e4 + (t || 0) * 60 + (n || 0);
+}
+function Te(e, t, n) {
+	let r = e || [];
+	return n.show_event_disallowed === !1 || !t?.length ? r : [...r, ...t.map((e) => ({
+		...e,
+		type: "goal_disallowed"
+	}))].sort((e, t) => we(t) - we(e));
+}
+function Ee(e) {
+	let t = e.reason ? e.reason.charAt(0).toUpperCase() + e.reason.slice(1) : "";
+	return e.challenged_by === "league" ? t ? `League review: ${t}` : "League review" : e.challenged_by ? t ? `${e.challenged_by} challenge: ${t}` : `${e.challenged_by} challenge` : t || "Taken off the board";
+}
+function De(e, t) {
+	return I`
+    <div class="ht-event-row ht-event-disallowed ${e.is_tracked_team ? "ht-event--ours" : ""}">
+      <span class="ht-event-dot"></span>
+      <span class="ht-event-meta">${t}</span>
+      <span class="ht-event-abbrev">${e.team_abbrev}</span>
+      <span class="ht-event-body">
+        <span class="ht-event-disallowed-name">${e.player_number == null ? "" : `#${e.player_number} `}${e.player_name}</span><span class="ht-event-tag ht-event-tag--disallowed">NO GOAL</span><span class="ht-event-assists"> · ${Ee(e)}</span>
+      </span>
+    </div>
+  `;
+}
+function Oe(e, t) {
 	e.dispatchEvent(new CustomEvent("config-changed", {
 		detail: { config: t },
 		bubbles: !0,
 		composed: !0
 	}));
 }
-async function Te(e, t) {
+async function ke(e, t) {
 	try {
 		await e.callService("hockey_tracker", "force_refresh", { entity_id: t });
 	} catch {
@@ -609,6 +636,7 @@ Z("hockey-tracker-card-editor", class e extends q {
 			collapsible_events: !0,
 			show_event_goals: !0,
 			show_event_penalties: !0,
+			show_event_disallowed: !0,
 			show_event_shots: !0,
 			logo_size: 64,
 			show_last_updated: !0,
@@ -691,6 +719,10 @@ Z("hockey-tracker-card-editor", class e extends q {
 				selector: { boolean: {} }
 			},
 			{
+				name: "show_event_disallowed",
+				selector: { boolean: {} }
+			},
+			{
 				name: "show_event_shots",
 				selector: { boolean: {} }
 			},
@@ -723,12 +755,13 @@ Z("hockey-tracker-card-editor", class e extends q {
 			collapsible_events: "Allow game events section to be collapsed",
 			show_event_goals: "Show goal events in ticker",
 			show_event_penalties: "Show penalty events in ticker",
+			show_event_disallowed: "Show disallowed goals in ticker",
 			show_event_shots: "Show shot events in ticker (NHL only)",
 			logo_size: "Logo size in px (24–200, default: 64)"
 		}[e.name] ?? e.name;
 	}
 	_valueChanged(e) {
-		e.stopPropagation(), we(this, e.detail.value);
+		e.stopPropagation(), Oe(this, e.detail.value);
 	}
 	render() {
 		return !this.hass || !this.config ? I`` : I`
@@ -742,7 +775,7 @@ Z("hockey-tracker-card-editor", class e extends q {
     `;
 	}
 });
-var Ee = class extends q {
+var Ae = class extends q {
 	constructor(...e) {
 		super(...e), Y(this, "_recentCollapsed", !1), Y(this, "_eventsCollapsed", !1), Y(this, "_prevLive", !1), Y(this, "_showLastGame", !1), Y(this, "_failedLogos", /* @__PURE__ */ new Set()), Y(this, "_ageTimer", null);
 	}
@@ -1021,6 +1054,13 @@ var Ee = class extends q {
       .ht-event-goal .ht-event-dot    { background: #388e3c; }
       .ht-event-penalty .ht-event-dot { background: #e65100; }
       .ht-event-shot .ht-event-dot    { background: #0288d1; }
+      .ht-event-disallowed .ht-event-dot {
+        background: transparent;
+        border: 2px solid #388e3c;
+        box-sizing: border-box;
+      }
+      .ht-event-disallowed-name { text-decoration: line-through; }
+      .ht-event-tag--disallowed { background: var(--error-color, #db4437); }
       .ht-event-meta {
         color: var(--secondary-text-color);
         font-size: 0.72rem;
@@ -1166,6 +1206,7 @@ var Ee = class extends q {
 			collapsible_events: !0,
 			show_event_goals: !0,
 			show_event_penalties: !0,
+			show_event_disallowed: !0,
 			show_event_shots: !0,
 			logo_size: 64,
 			show_last_updated: !0
@@ -1186,6 +1227,7 @@ var Ee = class extends q {
 			collapsible_events: !0,
 			show_event_goals: !0,
 			show_event_penalties: !0,
+			show_event_disallowed: !0,
 			show_event_shots: !0,
 			logo_size: 64,
 			show_last_updated: !0,
@@ -1227,32 +1269,32 @@ var Ee = class extends q {
 		if (!this.hass || !this.config) return I``;
 		let e = this.hass.states[this.config.entity];
 		if (!e) return I`<ha-card><div class="ht-content">Entity not found: ${this.config.entity}</div></ha-card>`;
-		let t = e.state, n = e.attributes, r = t === "NO_GAME" || t === "PRE", i = this._showLastGame && r, a = i ? "last_game" : this._displayMode(t, n), o = t === "NO_GAME" && this._isToday(n.next_game_date);
+		let t = e.state, n = e.attributes, r = Te(n.game_events, n.disallowed_goals, this.config), i = t === "NO_GAME" || t === "PRE", a = this._showLastGame && i, o = a ? "last_game" : this._displayMode(t, n), s = t === "NO_GAME" && this._isToday(n.next_game_date);
 		return I`
       <ha-card>
         <div class="ht-content">
           <div class="ht-header">
-            <span class="ht-badge ${o ? "ht-badge--pre" : {
+            <span class="ht-badge ${s ? "ht-badge--pre" : {
 			LIVE: "ht-badge--live",
 			PRE: "ht-badge--pre",
 			FINAL: "ht-badge--final",
 			NO_GAME: "ht-badge--none"
-		}[t] ?? "ht-badge--none"}">${o ? "Game Day" : {
+		}[t] ?? "ht-badge--none"}">${s ? "Game Day" : {
 			LIVE: "Live",
 			PRE: "Pre-Game",
 			FINAL: "Final",
 			NO_GAME: "No Game"
 		}[t] ?? t}</span>
             <span class="ht-title">${this._cardTitle(n, e)}</span>
-            ${r ? I`
+            ${i ? I`
               <ha-icon-button
-                class="ht-history-btn${i ? " ht-history-btn--active" : ""}"
-                label="${i ? "Current" : "Last Game"}"
+                class="ht-history-btn${a ? " ht-history-btn--active" : ""}"
+                label="${a ? "Current" : "Last Game"}"
                 @click=${() => {
 			this._showLastGame = !this._showLastGame, this.requestUpdate();
 		}}
               >
-                <ha-icon icon="${i ? "mdi:close" : "mdi:history"}"></ha-icon>
+                <ha-icon icon="${a ? "mdi:close" : "mdi:history"}"></ha-icon>
               </ha-icon-button>
             ` : ""}
             <ha-icon-button class="ht-refresh-btn" label="Refresh" @click=${this._refresh}>
@@ -1264,9 +1306,9 @@ var Ee = class extends q {
             <div class="ht-last-updated">Updated ${this._fmtAge(n.last_fetched)}</div>
           ` : ""}
 
-          ${a === "last_game" ? this._renderLastGame(n) : a === "game" ? this._renderGame(n, t) : this._renderUpcoming(n, t)}
+          ${o === "last_game" ? this._renderLastGame(n) : o === "game" ? this._renderGame(n, t) : this._renderUpcoming(n, t)}
 
-          ${this.config.show_events ? a === "last_game" && n.last_game_events?.length ? this._renderGameEvents(n.last_game_events) : a === "game" && n.game_events?.length ? this._renderGameEvents(n.game_events) : "" : ""}
+          ${this.config.show_events ? o === "last_game" && n.last_game_events?.length ? this._renderGameEvents(n.last_game_events) : o === "game" && r.length ? this._renderGameEvents(r) : "" : ""}
 
           ${this.config.show_recent_games && n.recent_games?.length ? this._renderRecentGames(n.recent_games) : ""}
         </div>
@@ -1413,7 +1455,7 @@ var Ee = class extends q {
     `;
 	}
 	_renderGameEvents(e) {
-		let t = e.filter((e) => !(e.type === "goal" && this.config.show_event_goals === !1 || e.type === "penalty" && this.config.show_event_penalties === !1 || e.type === "shot" && this.config.show_event_shots === !1)), n = Math.min(this.config.events_count || 10, t.length), r = this.config.collapsible_events !== !1, i = r && this._eventsCollapsed;
+		let t = e.filter((e) => !(e.type === "goal" && this.config.show_event_goals === !1 || e.type === "penalty" && this.config.show_event_penalties === !1 || e.type === "shot" && this.config.show_event_shots === !1 || e.type === "goal_disallowed" && this.config.show_event_disallowed === !1)), n = Math.min(this.config.events_count || 10, t.length), r = this.config.collapsible_events !== !1, i = r && this._eventsCollapsed;
 		return I`
       <div class="ht-events">
         <div class="ht-section-header">
@@ -1435,7 +1477,7 @@ var Ee = class extends q {
             ></ha-icon>
           ` : ""}
         </div>
-        ${i ? "" : t.slice(0, n).map((e) => e.type === "goal" ? this._renderGoal(e) : e.type === "shot" ? this._renderShot(e) : this._renderPenalty(e))}
+        ${i ? "" : t.slice(0, n).map((e) => e.type === "goal" ? this._renderGoal(e) : e.type === "goal_disallowed" ? De(e, `P${e.period} · ${e.time}`) : e.type === "shot" ? this._renderShot(e) : e.type === "penalty" ? this._renderPenalty(e) : "")}
       </div>
     `;
 	}
@@ -1590,10 +1632,10 @@ var Ee = class extends q {
 		}
 	}
 	async _refresh() {
-		this.hass && this.config.entity && await Te(this.hass, this.config.entity);
+		this.hass && this.config.entity && await ke(this.hass, this.config.entity);
 	}
 };
-Z("hockey-tracker-card", Ee), Z("hockey-playoff-card-editor", class e extends q {
+Z("hockey-tracker-card", Ae), Z("hockey-playoff-card-editor", class e extends q {
 	static get properties() {
 		return {
 			hass: {},
@@ -1611,6 +1653,7 @@ Z("hockey-tracker-card", Ee), Z("hockey-playoff-card-editor", class e extends q 
 			collapsible_events: !0,
 			show_event_goals: !0,
 			show_event_penalties: !0,
+			show_event_disallowed: !0,
 			show_event_shots: !0,
 			show_last_updated: !0,
 			...e
@@ -1676,6 +1719,10 @@ Z("hockey-tracker-card", Ee), Z("hockey-playoff-card-editor", class e extends q 
 				selector: { boolean: {} }
 			},
 			{
+				name: "show_event_disallowed",
+				selector: { boolean: {} }
+			},
+			{
 				name: "show_event_shots",
 				selector: { boolean: {} }
 			},
@@ -1698,12 +1745,13 @@ Z("hockey-tracker-card", Ee), Z("hockey-playoff-card-editor", class e extends q 
 			collapsible_events: "Allow game events section to be collapsed",
 			show_event_goals: "Show goal events in ticker",
 			show_event_penalties: "Show penalty events in ticker",
+			show_event_disallowed: "Show disallowed goals in ticker",
 			show_event_shots: "Show shot events in ticker (NHL only)",
 			show_last_updated: "Show time since last data refresh"
 		}[e.name] ?? e.name;
 	}
 	_valueChanged(e) {
-		e.stopPropagation(), we(this, e.detail.value);
+		e.stopPropagation(), Oe(this, e.detail.value);
 	}
 	render() {
 		return !this.hass || !this.config ? I`` : I`
@@ -1728,7 +1776,7 @@ Z("hockey-tracker-card", Ee), Z("hockey-playoff-card-editor", class e extends q 
 		};
 	}
 	static get styles() {
-		return [Ee.styles, o`
+		return [Ae.styles, o`
         ha-card { overflow: hidden; }
         .hp-content { padding: 12px 16px; }
 
@@ -1804,6 +1852,7 @@ Z("hockey-tracker-card", Ee), Z("hockey-playoff-card-editor", class e extends q 
 			collapsible_events: !0,
 			show_event_goals: !0,
 			show_event_penalties: !0,
+			show_event_disallowed: !0,
 			show_event_shots: !0,
 			show_last_updated: !0,
 			...e
@@ -2232,7 +2281,12 @@ Z("hockey-tracker-card", Ee), Z("hockey-playoff-card-editor", class e extends q 
 	}
 	_renderPlayoffEvents(e, t) {
 		if (!this.config.show_events || !t) return I``;
-		let n = (e.game_events || []).filter((e) => !(e.type === "goal" && this.config.show_event_goals === !1 || e.type === "penalty" && this.config.show_event_penalties === !1 || e.type === "shot" && this.config.show_event_shots === !1)).slice(0, this.config.events_count || 10);
+		let n = Te(e.game_events, e.disallowed_goals, this.config).filter((e) => !(e.type === "goal" && this.config.show_event_goals === !1 || e.type === "penalty" && this.config.show_event_penalties === !1 || e.type === "shot" && this.config.show_event_shots === !1 || e.type === "goal_disallowed" && this.config.show_event_disallowed === !1 || ![
+			"goal",
+			"goal_disallowed",
+			"penalty",
+			"shot"
+		].includes(e.type))).slice(0, this.config.events_count || 10);
 		if (!n.length) return I``;
 		let r = this.config.collapsible_events !== !1, i = r && this._eventsCollapsed;
 		return I`
@@ -2256,7 +2310,7 @@ Z("hockey-tracker-card", Ee), Z("hockey-playoff-card-editor", class e extends q 
             ></ha-icon>
           ` : ""}
         </div>
-        ${i ? "" : n.map((e) => I`
+        ${i ? "" : n.map((e) => e.type === "goal_disallowed" ? De(e, `P${e.period} ${e.time}`) : I`
             <div class="ht-event-row ${e.type === "goal" ? "ht-event-goal" : e.type === "shot" ? "ht-event-shot" : "ht-event-penalty"} ${e.is_tracked_team ? "ht-event--ours" : ""}">
               <span class="ht-event-dot"></span>
               <span class="ht-event-meta">P${e.period} ${e.time}</span>
@@ -2276,7 +2330,7 @@ Z("hockey-tracker-card", Ee), Z("hockey-playoff-card-editor", class e extends q 
     `;
 	}
 	async _refresh() {
-		this.hass && this.config?.entity && await Te(this.hass, this.config.entity);
+		this.hass && this.config?.entity && await ke(this.hass, this.config.entity);
 	}
 	render() {
 		if (!this.hass || !this.config?.entity) return I`<ha-card><div class="hp-content">Configure entity.</div></ha-card>`;
